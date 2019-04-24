@@ -1,0 +1,40 @@
+{
+    "name": "uccello/api",
+    "description": "A REST API for Uccello.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jonathan SARDO",
+            "email": "jonathan@uccellolabs.com"
+        }
+    ],
+    "require": {
+        "uccello/uccello": "1.0.*",
+        "tymon/jwt-auth": "1.0.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Uccello\\Api\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Uccello\\Api\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Uccello\\Api\\Providers\\AppServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
   public function boot()
   {
     // Translations
-    $this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'api');
+    $this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'uccello-api');
 
     // Migrations
     $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');

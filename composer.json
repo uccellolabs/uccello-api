@@ -1,5 +1,5 @@
 {
-    "name": "uccello/api",
+    "name": "uccello/uccello-api",
     "description": "A REST API for Uccello.",
     "type": "library",
     "license": "MIT",

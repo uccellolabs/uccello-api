@@ -24,7 +24,7 @@ class AddApiCapabilities extends Migration
         foreach ($this->capabilities as $name) {
             Capability::create([
                 'name' => $name,
-                'data' => [ 'package' => 'uccello/api' ]
+                'data' => [ 'package' => 'uccello/uccello-api' ]
             ]);
         }
     }

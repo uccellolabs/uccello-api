@@ -4,16 +4,15 @@ namespace Uccello\Api\Http\Controllers;
 
 use Schema;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Routing\Controller;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
-use Uccello\Core\Models\Relatedlist;
 use Uccello\Core\Events\BeforeSaveEvent;
 use Uccello\Core\Events\AfterSaveEvent;
 use Uccello\Core\Events\BeforeDeleteEvent;
 use Uccello\Core\Events\AfterDeleteEvent;
 
-class ApiController extends BaseController
+class ApiController extends Controller
 {
     const ITEMS_PER_PAGE = 20;
 
@@ -29,8 +28,8 @@ class ApiController extends BaseController
 
     /**
      * Display a listing of the resources.
-     * The result is formated differently if it is a classic query or one requested by datatable.
      * Filter on domain if domain_id column exists.
+     *
      * @param  \Uccello\Core\Models\Domain $domain
      * @param  \Uccello\Core\Models\Module $module
      * @param  \Illuminate\Http\Request $request
@@ -38,9 +37,6 @@ class ApiController extends BaseController
      */
     public function index(Domain $domain, Module $module, Request $request)
     {
-        // Check user permissions
-        $this->middleware('uccello.permissions:retrieve');
-
         // Get model model class
         $modelClass = $module->model_class;
 
@@ -68,9 +64,6 @@ class ApiController extends BaseController
      */
     public function store(Domain $domain, Module $module, Request $request)
     {
-        // Check user permissions
-        $this->middleware('uccello.permissions:create');
-
         // Get model model class
         $modelClass = $module->model_class;
         $record = new $modelClass();
@@ -99,7 +92,7 @@ class ApiController extends BaseController
         // Dispatch after save event
         event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
 
-        return $modelClass::find($record->id); // We do this to display also empty fields
+        return $modelClass::find($record->getKey()); // We do this to display also empty fields
     }
 
     /**
@@ -112,13 +105,12 @@ class ApiController extends BaseController
      */
     public function show(Domain $domain, Module $module, int $id)
     {
-        // Check user permissions
-        $this->middleware('uccello.permissions:retrieve');
-
         // Get model model class
         $modelClass = $module->model_class;
 
-        return $modelClass::find($id);
+        $record = $modelClass::find($id);
+
+        return $record ?? $this->errorResponse(404);
     }
 
     /**
@@ -132,15 +124,12 @@ class ApiController extends BaseController
      */
     public function update(Domain $domain, Module $module, int $id, Request $request)
     {
-        // Check user permissions
-        $this->middleware('uccello.permissions:update');
-
         // Get model model class
         $modelClass = $module->model_class;
         $record = $modelClass::find($id);
 
         if (!$record) {
-            return false;
+            return $this->errorResponse(404);
         }
 
         foreach ($request->all() as $fieldName => $value) {
@@ -177,19 +166,13 @@ class ApiController extends BaseController
      */
     public function destroy(Domain $domain, Module $module, $id, Request $request)
     {
-        // Check user permissions
-        $this->middleware('uccello.permissions:delete');
-
         // Get model model class
         $modelClass = $module->model_class;
 
         $record = $modelClass::find($id);
 
         if (!$record) {
-            return [
-                "success" => false,
-                "message" => 'Record not found'
-            ];
+            return $this->errorResponse(404);
         }
 
         // Dispatch before delete event
@@ -201,10 +184,14 @@ class ApiController extends BaseController
         // Dispatch after delete event
         event(new AfterDeleteEvent($domain, $module, $request, $record, true));
 
-        return [
+        return response()->json([
             "success" => true,
             "message" => 'Record deleted',
             "id" => $id
-        ];
+        ]);
+    }
+
+    protected function errorResponse($statusCode=404, $message='Record not found') {
+        return response()->json(['message' => $message], $statusCode);
     }
 }

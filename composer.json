@@ -10,8 +10,9 @@
         }
     ],
     "require": {
-        "uccello/uccello": "1.0.*",
-        "tymon/jwt-auth": "1.0.*"
+        "barryvdh/laravel-cors": "^0.11.3",
+        "tymon/jwt-auth": "1.0.*",
+        "uccello/uccello": "1.0.*"
     },
     "autoload": {
         "psr-4": {

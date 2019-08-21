@@ -53,6 +53,8 @@ class SyncController extends Controller
             $date = new Carbon($request->date);
             $query = $query->where('created_at', '>=', $date)
                 ->orWhere('updated_at', '>=', $date);
+
+                //TODO: Add list of deleted records
         }
 
         // Launch query

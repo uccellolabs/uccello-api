@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Uccello\\Api\\": "app/"
+            "Uccello\\Api\\": "src/"
         }
     },
     "autoload-dev": {

@@ -1,0 +1,2 @@
+Config JWT
+Config Cors

@@ -19,57 +19,6 @@ class ApiAuthController extends BaseController
     }
 
     /**
-     * API Login, on success return JWT Auth token
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function login2(Request $request)
-    {
-        $rules = [
-            'email' => 'required|email',
-            'password' => 'required',
-        ];
-
-        $input = $request->only('email', 'password');
-        $validator = Validator::make($input, $rules);
-
-        if ($validator->fails()) {
-            $error = $validator->messages();
-            return response()->json([ 'success'=> false, 'error'=> $error ]);
-        }
-
-        $credentials = [
-            'email' => $request->email,
-            'password' => $request->password
-        ];
-
-        try {
-            // attempt to verify the credentials and create a token for the user
-            if (!$token = JWTAuth::attempt($credentials)) {
-
-                //Check if it exists a user to validate
-                $user = User::where('email', $request->email)->first();
-
-                // if(!is_null($user))
-                // {
-                //     return response()->json(['success' => false, 'error' => 'user_not_verified'], 200);
-                // }
-
-                return $user;
-
-                return response()->json([ 'success' => false, 'error' => 'Invalid Credentials. Please make sure you entered the right information and you have verified your email address.' ], 401);
-            }
-        } catch (JWTException $e) {
-            // something went wrong whilst attempting to encode the token
-            return response()->json([ 'success' => false, 'error' => 'could_not_create_token' ], 500);
-        }
-
-        // all good so return the token
-        return response()->json([ 'success' => true, 'result'=>  $token ]);
-    }
-
-    /**
      * Get a JWT via given credentials.
      *
      * @return \Illuminate\Http\JsonResponse

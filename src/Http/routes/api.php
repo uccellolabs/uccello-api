@@ -1,7 +1,7 @@
 <?php
 
 Route::middleware('api')
-->namespace('Uccello\Api\Http\Controllers')
+->namespace('\Uccello\Api\Http\Controllers')
 ->name('api.uccello.')
 ->prefix('api')
 ->group(function() {
@@ -14,10 +14,10 @@ Route::middleware('api')
     }
 
     // Auth
-    Route::post('login', 'ApiAuthController@login')->name('login');
-    Route::get('logout', 'ApiAuthController@logout')->name('logout');
-    Route::get('me', 'ApiAuthController@me')->name('me');
-    Route::get('refresh', 'ApiAuthController@refresh')->name('refresh');
+    Route::post('auth/login', 'ApiAuthController@login')->name('auth.login');
+    Route::get('auth/logout', 'ApiAuthController@logout')->name('auth.logout');
+    Route::get('auth/me', 'ApiAuthController@me')->name('auth.me');
+    Route::get('auth/refresh', 'ApiAuthController@refresh')->name('auth.refresh');
 
     // CRUD
     Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello.permissions:retrieve');

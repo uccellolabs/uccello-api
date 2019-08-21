@@ -9,7 +9,10 @@ composer require uccello/uccello-api
 ## Publish the config
 Run the following command to publish the package config file:
 
+```bash
 php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
+```
+
 You should now have a config/jwt.php file that allows you to configure the basics of this package.
 
 ## Generate secret key

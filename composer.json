@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "barryvdh/laravel-cors": "^0.11.3",
+        "spatie/laravel-cors": "^1.5",
         "tymon/jwt-auth": "1.0.*",
         "uccello/uccello": "1.0.*"
     },

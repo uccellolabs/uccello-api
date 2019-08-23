@@ -60,6 +60,11 @@ class SyncController extends Controller
         // Launch query
         $records = $query->get();
 
+        // Get formatted records
+        $records->transform(function ($record) use ($domain, $module) {
+            return $this->getFormattedRecord($record, $domain, $module);
+        });
+
         return response()->json([
             'primary_key' => (new $modelClass)->getKeyName(),
             'count' => $records->count(),
@@ -115,13 +120,37 @@ class SyncController extends Controller
             // Dispatch after save event
             event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
 
-            $records[] = $modelClass::find($record->getKey()); // We do this to display also empty fields
+            $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
+
+            // Add formatted values
+            foreach ($module->fields as $field) {
+                // If a special template exists, use it. Else use the generic template
+                $uitype = uitype($field->uitype_id);
+                $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
+            }
+
+            // Get formatted record
+            $record = $this->getFormattedRecord($record, $domain, $module);
+
+            $records[] = $record;
         }
 
         return $records;
     }
 
-    protected function errorResponse($statusCode, $message) {
+    protected function getFormattedRecord($record, $domain, $module)
+    {
+        foreach ($module->fields as $field) {
+            // If a special template exists, use it. Else use the generic template
+            $uitype = uitype($field->uitype_id);
+            $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
+        }
+
+        return $record;
+    }
+
+    protected function errorResponse($statusCode, $message)
+    {
         return response()->json(['message' => $message], $statusCode);
     }
 }

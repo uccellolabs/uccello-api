@@ -45,13 +45,18 @@ class ApiController extends Controller
         // Filter on domain if column exists
         if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
             // Paginate results
-            $result = $modelClass::where('domain_id', $domain->id)->paginate(self::ITEMS_PER_PAGE);
+            $records = $modelClass::where('domain_id', $domain->id)->paginate(self::ITEMS_PER_PAGE);
         } else {
             // Paginate results
-            $result = $modelClass::paginate(self::ITEMS_PER_PAGE);
+            $records = $modelClass::paginate(self::ITEMS_PER_PAGE);
         }
 
-        return $result;
+        // Get formatted records
+        $records->getCollection()->transform(function ($record) use ($domain, $module) {
+            return $this->getFormattedRecord($record, $domain, $module);
+        });
+
+        return $records;
     }
 
     /**
@@ -92,7 +97,10 @@ class ApiController extends Controller
         // Dispatch after save event
         event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
 
-        return $modelClass::find($record->getKey()); // We do this to display also empty fields
+        $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
+
+        // Get formatted record
+        return $this->getFormattedRecord($record, $domain, $module);
     }
 
     /**
@@ -110,7 +118,12 @@ class ApiController extends Controller
 
         $record = $modelClass::find($id);
 
-        return $record ?? $this->errorResponse(404);
+        if (!$record) {
+            return $this->errorResponse(404);
+        }
+
+        // Get formatted record
+        return $this->getFormattedRecord($record, $domain, $module);
     }
 
     /**
@@ -151,7 +164,8 @@ class ApiController extends Controller
         // Dispatch after save event
         event(new AfterSaveEvent($domain, $module, $request, $record, 'edit', true));
 
-        return $record;
+        // Get formatted record
+        return $this->getFormattedRecord($record, $domain, $module);
 
     }
 
@@ -191,7 +205,19 @@ class ApiController extends Controller
         ]);
     }
 
-    protected function errorResponse($statusCode=404, $message='Record not found') {
+    protected function getFormattedRecord($record, $domain, $module)
+    {
+        foreach ($module->fields as $field) {
+            // If a special template exists, use it. Else use the generic template
+            $uitype = uitype($field->uitype_id);
+            $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
+        }
+
+        return $record;
+    }
+
+    protected function errorResponse($statusCode=404, $message='Record not found')
+    {
         return response()->json(['message' => $message], $statusCode);
     }
 }

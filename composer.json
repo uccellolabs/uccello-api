@@ -27,7 +27,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Uccello\\Api\\Providers\\AppServiceProvider"
+                "Uccello\\Api\\Providers\\AppServiceProvider",
+                "Uccello\\Api\\Providers\\RouteServiceProvider"
             ]
         }
     },

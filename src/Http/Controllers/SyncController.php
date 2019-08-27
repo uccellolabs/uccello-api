@@ -66,6 +66,7 @@ class SyncController extends Controller
         });
 
         return response()->json([
+            'app_url' => env('APP_URL'),
             'primary_key' => (new $modelClass)->getKeyName(),
             'count' => $records->count(),
             'records' => $records,

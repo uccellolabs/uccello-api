@@ -44,8 +44,15 @@ class ApiController extends Controller
 
         // Filter on domain if column exists
         if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
+            // Activate descendant view if the user is allowed
+            if (auth()->user()->canSeeDescendantsRecords($domain) && request('descendants')) {
+                $domainsIds = $domain->findDescendants()->pluck('id');
+                $query = $modelClass::whereIn('domain_id', $domainsIds);
+            } else {
+                $query = $modelClass::where('domain_id', $domain->id);
+            }
             // Paginate results
-            $records = $modelClass::where('domain_id', $domain->id)->paginate(self::ITEMS_PER_PAGE);
+            $records = $query->paginate(self::ITEMS_PER_PAGE);
         } else {
             // Paginate results
             $records = $modelClass::paginate(self::ITEMS_PER_PAGE);

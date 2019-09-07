@@ -6,12 +6,15 @@ use Carbon\Carbon;
 use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Uccello\Api\Support\ApiTrait;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
 use Uccello\Core\Events\BeforeSaveEvent;
 use Uccello\Core\Events\AfterSaveEvent;
 class SyncController extends Controller
 {
+    use ApiTrait;
+
     /**
      * Create a new AuthController instance.
      *
@@ -37,21 +40,10 @@ class SyncController extends Controller
         // Get current datetime
         $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
 
-        // Get model model class
         $modelClass = $module->model_class;
 
-        $query = $modelClass::query();
-
-        // Filter on domain if column exists
-        if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-            // Activate descendant view if the user is allowed
-            if (auth()->user()->canSeeDescendantsRecords($domain) && request('descendants')) {
-                $domainsIds = $domain->findDescendants()->pluck('id');
-                $query = $query->whereIn('domain_id', $domainsIds);
-            } else {
-                $query = $query->where('domain_id', $domain->id);
-            }
-        }
+        // Prepare query
+        $query = $this->prepareQueryForApi($domain, $module);
 
         // Filter results on the update_at date if necessary
         if ($request->date) {
@@ -142,21 +134,5 @@ class SyncController extends Controller
         }
 
         return $records;
-    }
-
-    protected function getFormattedRecord($record, $domain, $module)
-    {
-        foreach ($module->fields as $field) {
-            // If a special template exists, use it. Else use the generic template
-            $uitype = uitype($field->uitype_id);
-            $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
-        }
-
-        return $record;
-    }
-
-    protected function errorResponse($statusCode, $message)
-    {
-        return response()->json(['message' => $message], $statusCode);
     }
 }

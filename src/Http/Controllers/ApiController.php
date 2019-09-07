@@ -5,6 +5,7 @@ namespace Uccello\Api\Http\Controllers;
 use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Uccello\Api\Support\ApiTrait;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
 use Uccello\Core\Events\BeforeSaveEvent;
@@ -14,6 +15,8 @@ use Uccello\Core\Events\AfterDeleteEvent;
 
 class ApiController extends Controller
 {
+    use ApiTrait;
+
     const ITEMS_PER_PAGE = 20;
 
     /**
@@ -37,26 +40,12 @@ class ApiController extends Controller
      */
     public function index(Domain $domain, Module $module, Request $request)
     {
-        // Get model model class
-        $modelClass = $module->model_class;
-
         //TODO: Add search conditions
 
-        // Filter on domain if column exists
-        if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-            // Activate descendant view if the user is allowed
-            if (auth()->user()->canSeeDescendantsRecords($domain) && request('descendants')) {
-                $domainsIds = $domain->findDescendants()->pluck('id');
-                $query = $modelClass::whereIn('domain_id', $domainsIds);
-            } else {
-                $query = $modelClass::where('domain_id', $domain->id);
-            }
-            // Paginate results
-            $records = $query->paginate(self::ITEMS_PER_PAGE);
-        } else {
-            // Paginate results
-            $records = $modelClass::paginate(self::ITEMS_PER_PAGE);
-        }
+        // Prepare query
+        $query = $this->prepareQueryForApi($domain, $module);
+
+        $records = $query->paginate(env('UCCELLO_API_ITEMS_PER_PAGE', self::ITEMS_PER_PAGE));
 
         // Get formatted records
         $records->getCollection()->transform(function ($record) use ($domain, $module) {
@@ -126,7 +115,7 @@ class ApiController extends Controller
         $record = $modelClass::find($id);
 
         if (!$record) {
-            return $this->errorResponse(404);
+            return $this->errorResponse(404, 'Record not found');
         }
 
         // Get formatted record
@@ -149,7 +138,7 @@ class ApiController extends Controller
         $record = $modelClass::find($id);
 
         if (!$record) {
-            return $this->errorResponse(404);
+            return $this->errorResponse(404, 'Record not found');
         }
 
         foreach ($request->all() as $fieldName => $value) {
@@ -193,7 +182,7 @@ class ApiController extends Controller
         $record = $modelClass::find($id);
 
         if (!$record) {
-            return $this->errorResponse(404);
+            return $this->errorResponse(404, 'Record not found');
         }
 
         // Dispatch before delete event
@@ -221,10 +210,5 @@ class ApiController extends Controller
         }
 
         return $record;
-    }
-
-    protected function errorResponse($statusCode=404, $message='Record not found')
-    {
-        return response()->json(['message' => $message], $statusCode);
     }
 }

@@ -102,14 +102,14 @@ trait ApiTrait
     }
 
     /**
-     * Formats record's data
+     * Formats record's data to display
      *
      * @param mixed $record
      * @param \Uccello\Core\Models\Domain $domain
      * @param \Uccello\Core\Models\Module $module
      * @return mixed
      */
-    protected function getFormattedRecord($record, Domain $domain, Module $module)
+    protected function getFormattedRecordToDisplay($record, Domain $domain, Module $module)
     {
         foreach ($module->fields as $field) {
             // If a special template exists, use it. Else use the generic template

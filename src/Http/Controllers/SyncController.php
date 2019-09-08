@@ -59,7 +59,7 @@ class SyncController extends Controller
 
         // Get formatted records
         $records->transform(function ($record) use ($domain, $module) {
-            return $this->getFormattedRecord($record, $domain, $module);
+            return $this->getFormattedRecordToDisplay($record, $domain, $module);
         });
 
         return response()->json([
@@ -92,6 +92,8 @@ class SyncController extends Controller
         $records = collect();
 
         foreach ((array) $request->records as $_record) {
+            $_record = json_decode(json_encode($_record)); // To transform into an object
+
             $record = new $modelClass();
 
             if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
@@ -99,7 +101,10 @@ class SyncController extends Controller
                 $record->domain_id = $domain->id;
             }
 
-            foreach ($_record as $fieldName => $value) {
+            // Prepare record to save
+            $record = $this->getPreparedRecordToSave($domain, $module, $request, $record, $_record);
+
+            foreach ($record as $fieldName => $value) {
                 $field = $module->getField($fieldName);
 
                 // If the field exists format the value and store it in the good model column
@@ -120,19 +125,28 @@ class SyncController extends Controller
 
             $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
-            // Add formatted values
-            foreach ($module->fields as $field) {
-                // If a special template exists, use it. Else use the generic template
-                $uitype = uitype($field->uitype_id);
-                $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
-            }
-
             // Get formatted record
-            $record = $this->getFormattedRecord($record, $domain, $module);
+            // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
 
             $records[] = $record;
         }
 
         return $records;
+    }
+
+    /**
+     * Prepare record to save
+     *
+     * @param \Uccello\Core\Models\Domain $domain
+     * @param \Uccello\Core\Models\Module $module
+     * @param \Illuminate\Http\Request $request
+     * @param mixed $record
+     * @param Stdclass $recordFromRequest
+     * @return mixed
+     */
+    protected function getPreparedRecordToSave(Domain $domain, Module $module, Request $request, $record, $recordFromRequest)
+    {
+        // Can be overrided
+        return $record;
     }
 }

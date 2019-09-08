@@ -49,7 +49,7 @@ class ApiController extends Controller
 
         // Get formatted records
         $records->getCollection()->transform(function ($record) use ($domain, $module) {
-            return $this->getFormattedRecord($record, $domain, $module);
+            return $this->getFormattedRecordToDisplay($record, $domain, $module);
         });
 
         return $records;
@@ -96,7 +96,7 @@ class ApiController extends Controller
         $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
         // Get formatted record
-        return $this->getFormattedRecord($record, $domain, $module);
+        return $this->getFormattedRecordToDisplay($record, $domain, $module);
     }
 
     /**
@@ -119,7 +119,7 @@ class ApiController extends Controller
         }
 
         // Get formatted record
-        return $this->getFormattedRecord($record, $domain, $module);
+        return $this->getFormattedRecordToDisplay($record, $domain, $module);
     }
 
     /**
@@ -161,7 +161,7 @@ class ApiController extends Controller
         event(new AfterSaveEvent($domain, $module, $request, $record, 'edit', true));
 
         // Get formatted record
-        return $this->getFormattedRecord($record, $domain, $module);
+        return $this->getFormattedRecordToDisplay($record, $domain, $module);
 
     }
 
@@ -199,16 +199,5 @@ class ApiController extends Controller
             "message" => 'Record deleted',
             "id" => $id
         ]);
-    }
-
-    protected function getFormattedRecord($record, $domain, $module)
-    {
-        foreach ($module->fields as $field) {
-            // If a special template exists, use it. Else use the generic template
-            $uitype = uitype($field->uitype_id);
-            $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
-        }
-
-        return $record;
     }
 }

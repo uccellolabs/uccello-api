@@ -86,19 +86,32 @@ class SyncController extends Controller
             return $this->errorResponse(406, 'You must defined a list of records.');
         }
 
+        // Get current datetime
+        $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
+
         // Get model model class
         $modelClass = $module->model_class;
+        $primaryKeyName = (new $modelClass)->getKeyName();
 
         $records = collect();
 
         foreach ((array) $request->records as $_record) {
             $_record = json_decode(json_encode($_record)); // To transform into an object
 
-            $record = new $modelClass();
+            if (!empty($_record->{$primaryKeyName})) {
+                $record = $modelClass::find($_record->{$primaryKeyName});
+            }
 
-            if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-                // Paginate results
-                $record->domain_id = $domain->id;
+            if (empty($record)) {
+                $record = new $modelClass();
+
+                if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
+                    if (!empty($_record->domain_id)) {
+                        $record->domain_id = $_record->domain_id; //TODO: Check if user has create capability on this domain (security lack)
+                    } else {
+                        $record->domain_id = $domain->id;
+                    }
+                }
             }
 
             // Prepare record to save
@@ -131,7 +144,13 @@ class SyncController extends Controller
             $records[] = $record;
         }
 
-        return $records;
+        return response()->json([
+            'app_url' => env('APP_URL'),
+            'primary_key' => $primaryKeyName,
+            'count' => $records->count(),
+            'records' => $records,
+            'synced_at' => $syncedAt,
+        ]);
     }
 
     /**

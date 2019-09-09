@@ -136,6 +136,9 @@ class SyncController extends Controller
             // Dispatch after save event
             event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
 
+            // After save
+            $this->afterRecordSave($domain, $module, $request, $record, $_record);
+
             $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
             // Get formatted record
@@ -167,5 +170,20 @@ class SyncController extends Controller
     {
         // Can be overrided
         return $record;
+    }
+
+    /**
+     * Specific after save
+     *
+     * @param \Uccello\Core\Models\Domain $domain
+     * @param \Uccello\Core\Models\Module $module
+     * @param \Illuminate\Http\Request $request
+     * @param mixed $record
+     * @param Stdclass $recordFromRequest
+     * @return void
+     */
+    protected function afterRecordSave(Domain $domain, Module $module, Request $request, $record, $recordFromRequest)
+    {
+        // Can be overrided
     }
 }

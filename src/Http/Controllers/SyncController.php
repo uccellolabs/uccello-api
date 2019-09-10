@@ -55,19 +55,26 @@ class SyncController extends Controller
         }
 
         // Launch query
-        $records = $query->get();
+        $records = $query->paginate(env('UCCELLO_API_SYNC_PAGINATE_PER_PAGE', 100));
 
         // Get formatted records
-        $records->transform(function ($record) use ($domain, $module) {
+        $records->getCollection()->transform(function ($record) use ($domain, $module) {
             return $this->getFormattedRecordToDisplay($record, $domain, $module);
         });
+
+        $nextPageUrl = $this->getDownloadNextPageUrl($records->nextPageUrl());
 
         return response()->json([
             'app_url' => env('APP_URL'),
             'primary_key' => (new $modelClass)->getKeyName(),
-            'count' => $records->count(),
-            'records' => $records,
+            'records' => $records->getCollection(),
+            'current_page' => $records->currentPage(),
+            'last_page' => $records->lastPage(),
+            'next_page_url' => $nextPageUrl,
             'synced_at' => $syncedAt,
+            'from' => $records->firstItem(),
+            'to' => $records->lastItem() ?? 0,
+            'total' => $records->total(),
         ]);
     }
 
@@ -154,6 +161,30 @@ class SyncController extends Controller
             'records' => $records,
             'synced_at' => $syncedAt,
         ]);
+    }
+
+    /**
+     * Returns next page url with request params.
+     * Givent that $url already contains 'page' param, don't add it twice.
+     *
+     * @param string $url
+     * @return string
+     */
+    protected function getDownloadNextPageUrl($url)
+    {
+        if (!$url) {
+            return null;
+        }
+
+        foreach (request()->all() as $param => $value) {
+            if ($param === 'page') {
+                continue;
+            }
+
+            $url .= "&$param=$value";
+        }
+
+        return $url;
     }
 
     /**

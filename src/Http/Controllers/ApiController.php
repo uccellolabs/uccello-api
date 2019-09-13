@@ -6,6 +6,7 @@ use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Uccello\Api\Support\ApiTrait;
+use Uccello\Api\Support\ImageUploadTrait;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
 use Uccello\Core\Events\BeforeSaveEvent;
@@ -16,6 +17,7 @@ use Uccello\Core\Events\AfterDeleteEvent;
 class ApiController extends Controller
 {
     use ApiTrait;
+    use ImageUploadTrait;
 
     const ITEMS_PER_PAGE = 20;
 

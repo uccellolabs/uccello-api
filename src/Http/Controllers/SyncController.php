@@ -18,6 +18,8 @@ class SyncController extends Controller
     use ApiTrait;
     use ImageUploadTrait;
 
+    //TODO: Without multi domains (domain = null)
+
     /**
      * Create a new AuthController instance.
      *

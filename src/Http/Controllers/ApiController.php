@@ -21,6 +21,8 @@ class ApiController extends Controller
 
     const ITEMS_PER_PAGE = 20;
 
+    //TODO: Without multi domains (domain = null)
+
     /**
      * Create a new AuthController instance.
      *

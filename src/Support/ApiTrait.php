@@ -41,15 +41,7 @@ trait ApiTrait
         $modelClass = $module->model_class;
 
         // Filter on domain if column exists
-        if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-            // Activate descendant view if the user is allowed
-            if (auth()->user()->canSeeDescendantsRecords($domain) && request('descendants')) {
-                $domainsIds = $domain->findDescendants()->pluck('id');
-                $query = $query->whereIn('domain_id', $domainsIds);
-            } else {
-                $query = $query->where('domain_id', $domain->id);
-            }
-        }
+        $query = $modelClass::inDomain($domain, request('descendants'));
 
         return $query;
     }

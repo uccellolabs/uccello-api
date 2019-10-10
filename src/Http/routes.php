@@ -22,6 +22,7 @@ Route::name('api.uccello.')
     Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello.permissions:create');
     Route::match(['put', 'patch'], $domainAndModuleParams, 'ApiController@update')->name('update')->middleware('uccello.permissions:api-update');
     Route::delete($domainAndModuleParams.'/{id}', 'ApiController@destroy')->name('destroy')->middleware('uccello.permissions:api-delete');
+    Route::post($domainAndModuleParams.'/upload_img', 'ApiController@uploadImage')->name('upload_image')->middleware('uccello.permissions:api-update');
 
     // Sync
     Route::get($domainAndModuleParams.'/sync/download', 'SyncController@download')->name('sync.download')->middleware('uccello.permissions:api-retrieve');

@@ -56,8 +56,8 @@ trait ApiTrait
      */
     protected function addOrderByClause(Domain $domain, Module $module, Builder $query): Builder
     {
-        if (request()->has('order_by')) {
-            $orderByParams = explode(';', request('order_by'));
+        if (request()->has('order')) {
+            $orderByParams = explode(';', request('order'));
 
             foreach ($orderByParams as $orderByParam) {
                 $orderBy = explode(',', $orderByParam);

@@ -106,6 +106,12 @@ trait ApiTrait
         foreach ($module->fields as $field) {
             $uitype = uitype($field->uitype_id);
 
+            // If field name is not defined, it could be because the coloumn name is different.
+            // Adds field name as a key of the record
+            if (!isset($record->{$field->name}) && $record->{$field->column}) {
+                $record->{$field->name} = $record->{$field->column};
+            }
+
             // If a special template exists, add it.
             $formattedValue = $uitype->getFormattedValueToDisplay($field, $record);
             if ($formattedValue && $formattedValue !== $record->{$field->name}) {

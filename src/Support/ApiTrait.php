@@ -94,7 +94,7 @@ trait ApiTrait
     }
 
     /**
-     * Formats record's data to display
+     * Adds formatted record's data to display
      *
      * @param mixed $record
      * @param \Uccello\Core\Models\Domain $domain
@@ -104,9 +104,13 @@ trait ApiTrait
     protected function getFormattedRecordToDisplay($record, Domain $domain, Module $module)
     {
         foreach ($module->fields as $field) {
-            // If a special template exists, use it. Else use the generic template
             $uitype = uitype($field->uitype_id);
-            $record->{$field->name} = $uitype->getFormattedValueToDisplay($field, $record);
+
+            // If a special template exists, add it.
+            $formattedValue = $uitype->getFormattedValueToDisplay($field, $record);
+            if ($formattedValue && $formattedValue !== $record->{$field->name}) {
+                $record->{$field->name.'_formatted'} = $formattedValue;
+            }
         }
 
         return $record;

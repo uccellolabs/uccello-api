@@ -46,6 +46,7 @@ class SyncController extends Controller
         $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
 
         $modelClass = $module->model_class;
+        $primaryKeyName = (new $modelClass)->getKeyName();
 
         // Prepare query
         $query = $this->prepareQueryForApi($domain, $module);
@@ -57,6 +58,14 @@ class SyncController extends Controller
                 ->orWhere('updated_at', '>=', $date);
 
                 //TODO: Add list of deleted records
+        }
+
+        // Filter results on primary key
+        if ($request->ids) {
+            $filteredIds = (array) $request->ids;
+            if ($filteredIds) {
+                $query = $query->whereIn($primaryKeyName, $filteredIds);
+            }
         }
 
         // Launch query

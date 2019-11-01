@@ -196,6 +196,9 @@ class SyncController extends Controller
         $modelClass = $module->model_class;
         $primaryKeyName = (new $modelClass)->getKeyName();
 
+        $query = $modelClass::query();
+        $query = $this->addDomainsConditions($domain, $module, $query);
+
         // Can override updated_at column name
         $updatedAtColumn = $request->updated_at ?? 'updated_at';
 
@@ -205,7 +208,7 @@ class SyncController extends Controller
             $_record = json_decode(json_encode($_record)); // To transform into an object
 
             $updatedDate = Carbon::parse($_record->updated_at)->setTimezone(config('app.timezone'));
-            $record = $modelClass::where($primaryKeyName, $_record->{$primaryKeyName})
+            $record = (clone $query)->where($primaryKeyName, $_record->{$primaryKeyName})
                 ->where($updatedAtColumn, '>', $updatedDate)
                 ->first();
 

@@ -207,7 +207,7 @@ class SyncController extends Controller
         foreach ((array) $request->records as $_record) {
             $_record = json_decode(json_encode($_record)); // To transform into an object
 
-            $updatedDate = Carbon::parse($_record->updated_at)->setTimezone(config('app.timezone'));
+            $updatedDate = Carbon::parse($_record->updated_at);
             $record = (clone $query)->where($primaryKeyName, $_record->{$primaryKeyName})
                 ->where($updatedAtColumn, '>', $updatedDate)
                 ->first();

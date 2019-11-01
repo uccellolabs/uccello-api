@@ -169,6 +169,46 @@ class SyncController extends Controller
     }
 
     /**
+     * Retrieves all records ids for all records with a more recent version.
+     * It retrieves all records by their ids and compares updated_at values.
+     *
+     * @param  \Uccello\Core\Models\Domain $domain
+     * @param  \Uccello\Core\Models\Module $module
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function latest(Domain $domain, Module $module, Request $request)
+    {
+        if (!$request->records) {
+            return $this->errorResponse(406, 'You must defined a list of records with updated dates. e.g: {"records": [{"id":1,"updated_at":"2018-04-01T15:31:52.859Z"},{"id":2,"updated_at":"2019-11-01T14:26:46"}]}');
+        }
+
+        // Get model model class
+        $modelClass = $module->model_class;
+        $primaryKeyName = (new $modelClass)->getKeyName();
+
+        // Can override updated_at column name
+        $updatedAtColumn = $request->updated_at ?? 'updated_at';
+
+        $latest = collect();
+
+        foreach ((array) $request->records as $_record) {
+            $_record = json_decode(json_encode($_record)); // To transform into an object
+
+            $updatedDate = Carbon::parse($_record->updated_at)->setTimezone(config('app.timezone'));
+            $record = $modelClass::where($primaryKeyName, $_record->{$primaryKeyName})
+                ->where($updatedAtColumn, '>', $updatedDate)
+                ->first();
+
+            if ($record) {
+                $latest->push($record->getKey());
+            }
+        }
+
+        return $latest;
+    }
+
+    /**
      * Returns next page url with request params.
      * Givent that $url already contains 'page' param, don't add it twice.
      *

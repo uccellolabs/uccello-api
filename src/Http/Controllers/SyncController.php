@@ -188,7 +188,7 @@ class SyncController extends Controller
      */
     public function latest(Domain $domain, Module $module, Request $request)
     {
-        if (!$request->records) {
+        if (!isset($request->records)) {
             return $this->errorResponse(406, 'You must defined a list of records with updated dates. e.g: {"records": [{"id":1,"updated_at":"2018-04-01T15:31:52.859Z"},{"id":2,"updated_at":"2019-11-01T14:26:46"}]}');
         }
 

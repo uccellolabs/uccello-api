@@ -163,7 +163,7 @@ class SyncController extends Controller
             $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
             // Get formatted record
-            // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
+            $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
 
             $records[] = $record;
         }

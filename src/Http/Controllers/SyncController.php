@@ -162,8 +162,8 @@ class SyncController extends Controller
 
             $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
-            // Get formatted record
-            $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
+            // Get formatted record -> create an exception, because columns do not exist !!!
+            // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
 
             $records[] = $record;
         }
@@ -263,7 +263,7 @@ class SyncController extends Controller
             return null;
         }
 
-        foreach (request()->all() as $param => $value) {
+        foreach (request()->query() as $param => $value) { // Only query params (from url)
             if ($param === 'page') {
                 continue;
             }

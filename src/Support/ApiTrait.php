@@ -108,11 +108,11 @@ trait ApiTrait
 
             // If field name is not defined, it could be because the coloumn name is different.
             // Adds field name as a key of the record
-            if (!$record->getAttributeValue($field->name) && $field->column !== $field->name) {
+            if ($uitype->name !== 'entity' && !$record->getAttributeValue($field->name) && $field->column !== $field->name) {
                 $record->setAttribute($field->name, $record->getAttributeValue($field->column));
             }
 
-            // // If a special template exists, add it.
+            // If a special template exists, add it.
             $formattedValue = $uitype->getFormattedValueToDisplay($field, $record);
             if ($formattedValue && $formattedValue !== $record->getAttributeValue($field->name)) {
                 $record->setAttribute($field->name.'_formatted', $formattedValue);

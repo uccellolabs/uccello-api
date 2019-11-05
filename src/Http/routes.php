@@ -28,5 +28,6 @@ Route::name('api.uccello.')
     Route::match(['get', 'post'], $domainAndModuleParams.'/sync/download', 'SyncController@download')->name('sync.download')->middleware('uccello.permissions:api-retrieve');
     Route::post($domainAndModuleParams.'/sync/upload', 'SyncController@upload')->name('sync.upload')->middleware('uccello.permissions:api-create');
     Route::post($domainAndModuleParams.'/sync/upload_img', 'SyncController@uploadImage')->name('sync.upload_image')->middleware('uccello.permissions:api-update');
+    Route::post($domainAndModuleParams.'/sync/delete', 'SyncController@delete')->name('sync.delete')->middleware('uccello.permissions:api-delete');
     Route::post($domainAndModuleParams.'/sync/latest', 'SyncController@latest')->name('sync.latest')->middleware('uccello.permissions:api-retrieve');
 });

@@ -103,8 +103,8 @@ class SyncController extends Controller
      */
     public function upload(Domain $domain, Module $module, Request $request)
     {
-        if (!$request->records) {
-            return $this->errorResponse(406, 'You must defined a list of records.');
+        if (!isset($request->records)) {
+            return $this->errorResponse(406, 'You must defined a list of records. e.g: {"records": [...]}');
         }
 
         // Get current datetime
@@ -218,6 +218,36 @@ class SyncController extends Controller
         }
 
         return $latest;
+    }
+
+    /**
+     * Deletes records by uuids.
+     *
+     * @param  \Uccello\Core\Models\Domain $domain
+     * @param  \Uccello\Core\Models\Module $module
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function delete(Domain $domain, Module $module, Request $request)
+    {
+        if (!isset($request->uuids)) {
+            return $this->errorResponse(406, 'You must defined a list of uuids. e.g: {"uuids": ["597eece0-ffd8-11e9-b1d2-5d4a94ec6c2b"]}');
+        }
+
+        // Get model model class
+        $deletedUuids = collect();
+
+        foreach ((array) $request->uuids as $uuid) {
+            $record = ucrecord($uuid);
+            if ($record && $record->module->id === $module->id) {
+                $record->delete();
+                $deletedUuids->push($uuid);
+            }
+        }
+
+        return response()->json([
+            'deleted_uuids' => $deletedUuids,
+        ]);
     }
 
     /**

@@ -35,6 +35,11 @@ class RouteServiceProvider extends DefaultRouteServiceProvider
      */
     protected function mapUccelloRoutes()
     {
+        // Web
+        Route::middleware('web', 'auth')
+            ->namespace('Uccello\Api\Http\Controllers')
+            ->group(__DIR__.'/../Http/routes-web.php');
+
         // Api
         Route::middleware('api')
             ->namespace('Uccello\Api\Http\Controllers')

@@ -10,6 +10,7 @@
         }
     ],
     "require": {
+        "darkaonline/l5-swagger": "5.8.*",
         "spatie/laravel-cors": "^1.5",
         "tymon/jwt-auth": "1.0.*",
         "uccello/uccello": "1.0.*"

@@ -2,11 +2,11 @@
 
 namespace Uccello\Api\Http\Controllers;
 
-use URL;
-use Request;
-use Response;
 use L5Swagger\Generator;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\URL;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
 
@@ -547,18 +547,19 @@ class SwaggerController extends BaseController
         $parameters = [];
 
         foreach ($module->fields()->get() as $field) {
-            if (($type === 'create' && !$field->isCreateable()) || ($type === 'update' && !$field->isEditable())) {
+            // We want to display hidden fields, because we can set a value with the API.
+            if (($type === 'create' && !$field->isCreateable() && !$field->isHidden()) || ($type === 'update' && !$field->isEditable() && !$field->isHidden())) {
                 continue;
             }
 
-            $customDescription = ''; //$this->getFieldCustomDescription($field);
+            $customDescription = ''; //$this->getFieldCustomDescription($field); //TODO: Add custom description (ex: Date format)
 
             $parameters[] = [
                 "name" => $field->name,
                 "in" => "formData",
                 "description" => uctrans($field->label, $module) . $customDescription,
                 "required" => $checkRequired ? $field->required : false,
-                "type" => '', //$this->getParameterType($field)
+                "type" => '', //$this->getParameterType($field) //TODO: Add type
             ];
         }
 

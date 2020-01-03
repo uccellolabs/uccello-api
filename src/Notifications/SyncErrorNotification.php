@@ -45,8 +45,8 @@ class SyncErrorNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject(trans('uccello-api:error.exception.email.title'))
-            ->line(trans('uccello-api:error.exception.email.message'))
+            ->subject(trans('uccello-api:error.exception.email.title', ['module' => $this->moduleName]))
+            ->line(trans('uccello-api:error.exception.email.message', ['module' => $this->moduleName]))
             ->line($this->error);
     }
 

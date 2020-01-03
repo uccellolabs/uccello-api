@@ -13,16 +13,18 @@ class SyncErrorNotification extends Notification
 
     protected $moduleName;
     protected $error;
+    protected $trace;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($moduleName, $error)
+    public function __construct($moduleName, $error, $trace)
     {
         $this->moduleName = $moduleName;
         $this->error = $error;
+        $this->trace = $trace;
     }
 
     /**
@@ -44,10 +46,11 @@ class SyncErrorNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        return (new MailMessage)
+        $message = (new MailMessage)
             ->subject(trans('uccello-api:error.exception.email.title', ['module' => $this->moduleName]))
             ->line(trans('uccello-api:error.exception.email.message', ['module' => $this->moduleName]))
-            ->line($this->error);
+            ->line($this->error)
+            ->line($this->trace);
     }
 
     /**

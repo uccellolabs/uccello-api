@@ -334,7 +334,7 @@ class SyncController extends Controller
             foreach ($usernames as $username) {
                 $user = User::where('username', $username)->first();
                 if ($user) {
-                    $user->notify(new SyncErrorNotification(uctrans($module->name, $module), $e->getMessage()));
+                    $user->notify(new SyncErrorNotification(uctrans($module->name, $module), $e->getMessage(), $e->getTraceAsString()));
                 }
             }
         }

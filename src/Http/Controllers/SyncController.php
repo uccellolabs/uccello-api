@@ -2,10 +2,12 @@
 
 namespace Uccello\Api\Http\Controllers;
 
+use App\User;
 use Carbon\Carbon;
 use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Uccello\Api\Notifications\SyncErrorNotification;
 use Uccello\Api\Support\ApiTrait;
 use Uccello\Api\Support\ImageUploadTrait;
 use Uccello\Core\Models\Domain;
@@ -42,41 +44,46 @@ class SyncController extends Controller
      */
     public function download(Domain $domain, Module $module, Request $request)
     {
-        // Get current datetime
-        $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
+        try {
+            // Get current datetime
+            $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
 
-        $modelClass = $module->model_class;
-        $primaryKeyName = (new $modelClass)->getKeyName();
+            $modelClass = $module->model_class;
+            $primaryKeyName = (new $modelClass)->getKeyName();
 
-        // Prepare query
-        $query = $this->prepareQueryForApi($domain, $module);
+            // Prepare query
+            $query = $this->prepareQueryForApi($domain, $module);
 
-        // Filter results on the update_at date if necessary
-        if ($request->date) {
-            $date = new Carbon($request->date);
-            $query = $query->where('created_at', '>=', $date)
-                ->orWhere('updated_at', '>=', $date);
+            // Filter results on the update_at date if necessary
+            if ($request->date) {
+                $date = new Carbon($request->date);
+                $query = $query->where('created_at', '>=', $date)
+                    ->orWhere('updated_at', '>=', $date);
 
-                //TODO: Add list of deleted records
-        }
-
-        // Filter results on primary key
-        if ($request->ids) {
-            $filteredIds = (array) $request->ids;
-            if ($filteredIds) {
-                $query = $query->whereIn($primaryKeyName, $filteredIds);
+                    //TODO: Add list of deleted records
             }
+
+            // Filter results on primary key
+            if ($request->ids) {
+                $filteredIds = (array) $request->ids;
+                if ($filteredIds) {
+                    $query = $query->whereIn($primaryKeyName, $filteredIds);
+                }
+            }
+
+            // Launch query
+            $records = $query->paginate(env('UCCELLO_API_SYNC_PAGINATE_PER_PAGE', 100));
+
+            // Get formatted records
+            $records->getCollection()->transform(function ($record) use ($domain, $module) {
+                return $this->getFormattedRecordToDisplay($record, $domain, $module);
+            });
+
+            $nextPageUrl = $this->getDownloadNextPageUrl($records->nextPageUrl());
+
+        } catch (\Exception $e) {
+            $this->sendExceptionByEmail($module, $e);
         }
-
-        // Launch query
-        $records = $query->paginate(env('UCCELLO_API_SYNC_PAGINATE_PER_PAGE', 100));
-
-        // Get formatted records
-        $records->getCollection()->transform(function ($record) use ($domain, $module) {
-            return $this->getFormattedRecordToDisplay($record, $domain, $module);
-        });
-
-        $nextPageUrl = $this->getDownloadNextPageUrl($records->nextPageUrl());
 
         return response()->json([
             'app_url' => env('APP_URL'),
@@ -107,65 +114,69 @@ class SyncController extends Controller
             return $this->errorResponse(406, 'You must defined a list of records. e.g: {"records": [...]}');
         }
 
-        // Get current datetime
-        $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
+        try {
+            // Get current datetime
+            $syncedAt = Carbon::now()->format('Y-m-d H:i:s');
 
-        // Get model model class
-        $modelClass = $module->model_class;
-        $primaryKeyName = (new $modelClass)->getKeyName();
+            // Get model model class
+            $modelClass = $module->model_class;
+            $primaryKeyName = (new $modelClass)->getKeyName();
 
-        $records = collect();
+            $records = collect();
 
-        foreach ((array) $request->records as $_record) {
-            $_record = json_decode(json_encode($_record)); // To transform into an object
+            foreach ((array) $request->records as $_record) {
+                $_record = json_decode(json_encode($_record)); // To transform into an object
 
-            if (!empty($_record->{$primaryKeyName})) {
-                $record = $modelClass::find($_record->{$primaryKeyName});
-            }
+                if (!empty($_record->{$primaryKeyName})) {
+                    $record = $modelClass::find($_record->{$primaryKeyName});
+                }
 
-            if (empty($record)) {
-                $record = new $modelClass();
+                if (empty($record)) {
+                    $record = new $modelClass();
 
-                if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-                    if (!empty($_record->domain_id)) {
-                        $record->domain_id = $_record->domain_id; //TODO: Check if user has create capability on this domain (security lack)
-                    } else {
-                        $record->domain_id = $domain->id;
+                    if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
+                        if (!empty($_record->domain_id)) {
+                            $record->domain_id = $_record->domain_id; //TODO: Check if user has create capability on this domain (security lack)
+                        } else {
+                            $record->domain_id = $domain->id;
+                        }
                     }
                 }
-            }
 
-            // Prepare record to save
-            $record = $this->getPreparedRecordToSave($domain, $module, $request, $record, $_record);
+                // Prepare record to save
+                $record = $this->getPreparedRecordToSave($domain, $module, $request, $record, $_record);
 
-            foreach ($record as $fieldName => $value) {
-                $field = $module->getField($fieldName);
+                foreach ($record as $fieldName => $value) {
+                    $field = $module->getField($fieldName);
 
-                // If the field exists format the value and store it in the good model column
-                if (!is_null($field)) {
-                    $column = $field->column;
-                    $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                    // If the field exists format the value and store it in the good model column
+                    if (!is_null($field)) {
+                        $column = $field->column;
+                        $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                    }
                 }
+
+                // Dispatch before save event
+                event(new BeforeSaveEvent($domain, $module, $request, $record, 'create', true));
+
+                // Save
+                $record->save();
+
+                // Dispatch after save event
+                event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
+
+                // After save
+                $this->afterRecordSave($domain, $module, $request, $record, $_record);
+
+                $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
+
+                // Get formatted record -> create an exception, because columns do not exist !!!
+                // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
+
+                $records[] = $record;
             }
-
-            // Dispatch before save event
-            event(new BeforeSaveEvent($domain, $module, $request, $record, 'create', true));
-
-            // Save
-            $record->save();
-
-            // Dispatch after save event
-            event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
-
-            // After save
-            $this->afterRecordSave($domain, $module, $request, $record, $_record);
-
-            $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
-
-            // Get formatted record -> create an exception, because columns do not exist !!!
-            // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
-
-            $records[] = $record;
+        } catch (\Exception $e) {
+            $this->sendExceptionByEmail($module, $e);
         }
 
         return response()->json([
@@ -192,29 +203,33 @@ class SyncController extends Controller
             return $this->errorResponse(406, 'You must defined a list of records with updated dates. e.g: {"records": [{"id":1,"updated_at":"2018-04-01T15:31:52.859Z"},{"id":2,"updated_at":"2019-11-01T14:26:46"}]}');
         }
 
-        // Get model model class
-        $modelClass = $module->model_class;
-        $primaryKeyName = (new $modelClass)->getKeyName();
+        try {
+            // Get model model class
+            $modelClass = $module->model_class;
+            $primaryKeyName = (new $modelClass)->getKeyName();
 
-        $query = $modelClass::query();
-        $query = $this->addDomainsConditions($domain, $module, $query);
+            $query = $modelClass::query();
+            $query = $this->addDomainsConditions($domain, $module, $query);
 
-        // Can override updated_at column name
-        $updatedAtColumn = $request->updated_at ?? 'updated_at';
+            // Can override updated_at column name
+            $updatedAtColumn = $request->updated_at ?? 'updated_at';
 
-        $latest = collect();
+            $latest = collect();
 
-        foreach ((array) $request->records as $_record) {
-            $_record = json_decode(json_encode($_record)); // To transform into an object
+            foreach ((array) $request->records as $_record) {
+                $_record = json_decode(json_encode($_record)); // To transform into an object
 
-            $updatedDate = Carbon::parse($_record->updated_at);
-            $record = (clone $query)->where($primaryKeyName, $_record->{$primaryKeyName})
-                ->where($updatedAtColumn, '>', $updatedDate)
-                ->first();
+                $updatedDate = Carbon::parse($_record->updated_at);
+                $record = (clone $query)->where($primaryKeyName, $_record->{$primaryKeyName})
+                    ->where($updatedAtColumn, '>', $updatedDate)
+                    ->first();
 
-            if ($record) {
-                $latest->push($record->getKey());
+                if ($record) {
+                    $latest->push($record->getKey());
+                }
             }
+        } catch (\Exception $e) {
+            $this->sendExceptionByEmail($module, $e);
         }
 
         return $latest;
@@ -234,15 +249,19 @@ class SyncController extends Controller
             return $this->errorResponse(406, 'You must defined a list of uuids. e.g: {"uuids": ["597eece0-ffd8-11e9-b1d2-5d4a94ec6c2b"]}');
         }
 
-        // Get model model class
-        $deletedUuids = collect();
+        try {
+            // Get model model class
+            $deletedUuids = collect();
 
-        foreach ((array) $request->uuids as $uuid) {
-            $record = ucrecord($uuid);
-            if ($record && $record->module->id === $module->id) {
-                $record->delete();
-                $deletedUuids->push($uuid);
+            foreach ((array) $request->uuids as $uuid) {
+                $record = ucrecord($uuid);
+                if ($record && $record->module->id === $module->id) {
+                    $record->delete();
+                    $deletedUuids->push($uuid);
+                }
             }
+        } catch (\Exception $e) {
+            $this->sendExceptionByEmail($module, $e);
         }
 
         return response()->json([
@@ -303,5 +322,21 @@ class SyncController extends Controller
     protected function afterRecordSave(Domain $domain, Module $module, Request $request, $record, $recordFromRequest)
     {
         // Can be overrided
+    }
+
+    protected function sendExceptionByEmail($module, $e)
+    {
+        if (env('USERNAME_TO_NOTIFY_ON_EXCEPTION')) {
+            $usernames = explode(';', env('USERNAME_TO_NOTIFY_ON_EXCEPTION'));
+        }
+
+        if (!empty($usernames)) {
+            foreach ($usernames as $username) {
+                $user = User::where('username', $username)->first();
+                if ($user) {
+                    $user->notify(new SyncErrorNotification(uctrans($module->name, $module), $e->getMessage()));
+                }
+            }
+        }
     }
 }

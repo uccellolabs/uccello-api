@@ -337,9 +337,9 @@ class SyncController extends Controller
                 continue;
             }
 
-            if (isset($recordFromRequest->{$field->column}) && $record->isFillable($field->column)) {
+            if (isset($recordFromRequest->{$field->column})) {
                 $value = $recordFromRequest->{$field->column};
-            } elseif (isset($recordFromRequest->{$field->name}) && $record->isFillable($field->name)) {
+            } elseif (isset($recordFromRequest->{$field->name})) {
                 $value = $recordFromRequest->{$field->name};
             } else {
                 $value = null;

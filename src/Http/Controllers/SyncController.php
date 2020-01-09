@@ -4,9 +4,9 @@ namespace Uccello\Api\Http\Controllers;
 
 use App\User;
 use Carbon\Carbon;
-use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Schema;
 use Uccello\Api\Notifications\SyncErrorNotification;
 use Uccello\Api\Support\ApiTrait;
 use Uccello\Api\Support\ImageUploadTrait;
@@ -124,27 +124,19 @@ class SyncController extends Controller
 
             $records = collect();
 
-            foreach ((array) $request->records as $_record) {
-                $_record = json_decode(json_encode($_record)); // To transform into an object
+            foreach ((array) $request->records as $recordFromRequest) {
+                $recordFromRequest = json_decode(json_encode($recordFromRequest)); // To transform into an object
 
-                if (!empty($_record->{$primaryKeyName})) {
-                    $record = $modelClass::find($_record->{$primaryKeyName});
+                if (!empty($recordFromRequest->{$primaryKeyName})) {
+                    $record = $modelClass::find($recordFromRequest->{$primaryKeyName});
                 }
 
                 if (empty($record)) {
-                    $record = new $modelClass();
-
-                    if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
-                        if (!empty($_record->domain_id)) {
-                            $record->domain_id = $_record->domain_id; //TODO: Check if user has create capability on this domain (security lack)
-                        } else {
-                            $record->domain_id = $domain->id;
-                        }
-                    }
+                    $record = $this->createNewRecord($domain, $module, $recordFromRequest);
                 }
 
                 // Prepare record to save
-                $record = $this->getPreparedRecordToSave($domain, $module, $request, $record, $_record);
+                $record = $this->getPreparedRecordToSave($domain, $module, $request, $record, $recordFromRequest);
 
                 foreach ($record as $fieldName => $value) {
                     $field = $module->getField($fieldName);
@@ -166,12 +158,12 @@ class SyncController extends Controller
                 event(new AfterSaveEvent($domain, $module, $request, $record, 'create', true));
 
                 // After save
-                $this->afterRecordSave($domain, $module, $request, $record, $_record);
+                $this->afterRecordSave($domain, $module, $request, $record, $recordFromRequest);
 
                 $record = $modelClass::find($record->getKey()); // We do this to display also empty fields
 
                 // Get formatted record -> create an exception, because columns do not exist !!!
-                // $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
+                $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
 
                 $records[] = $record;
             }
@@ -294,7 +286,41 @@ class SyncController extends Controller
     }
 
     /**
-     * Prepare record to save
+     * Create new record.
+     * domain_id is fillable if user can create by API on the domain defined.
+     *
+     * @param Domain $domain
+     * @param Module $module
+     * @param [type] $recordFromRequest
+     * @return void
+     */
+    protected function createNewRecord(Domain $domain, Module $module, $recordFromRequest)
+    {
+        // Get model model class
+        $modelClass = $module->model_class;
+        $record = new $modelClass();
+
+        if (Schema::hasColumn((new $modelClass)->getTable(), 'domain_id')) {
+            if (isset($recordFromRequest->domain_id)) {
+                $_domain = ucdomain($recordFromRequest->domain_id);
+            }
+
+            if (isset($_domain) && auth()->user()->canCreateByApi($_domain, $module)) {
+                $record->domain_id = $recordFromRequest->domain_id;
+            } else {
+                $record->domain_id = $domain->id;
+            }
+        }
+
+        return $record;
+    }
+
+    /**
+     * Prepare record to save.
+     * Search in request if param exists.
+     * Priority:
+     *  1. Column name
+     *  2. Field name
      *
      * @param \Uccello\Core\Models\Domain $domain
      * @param \Uccello\Core\Models\Module $module
@@ -305,7 +331,25 @@ class SyncController extends Controller
      */
     protected function getPreparedRecordToSave(Domain $domain, Module $module, Request $request, $record, $recordFromRequest)
     {
-        // Can be overrided
+        foreach ($module->fields as $field) {
+            // Ignore domain id (for security)
+            if ($field->column === 'domain_id') {
+                continue;
+            }
+
+            if (isset($recordFromRequest->{$field->column}) && $record->isFillable($field->column)) {
+                $value = $recordFromRequest->{$field->column};
+            } elseif (isset($recordFromRequest->{$field->name}) && $record->isFillable($field->name)) {
+                $value = $recordFromRequest->{$field->name};
+            } else {
+                $value = null;
+            }
+
+            if ($value) {
+                $record->{$field->column} = $value;
+            }
+        }
+
         return $record;
     }
 

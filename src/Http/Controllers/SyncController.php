@@ -166,6 +166,9 @@ class SyncController extends Controller
                 $record = $this->getFormattedRecordToDisplay($record, $domain, $module);
 
                 $records[] = $record;
+
+                // Unset $record else it is used in the next loop and id is defined
+                unset($record);
             }
         } catch (\Exception $e) {
             $this->sendExceptionByEmail($module, $e);

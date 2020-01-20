@@ -80,7 +80,6 @@ class SyncController extends Controller
             });
 
             $nextPageUrl = $this->getDownloadNextPageUrl($records->nextPageUrl());
-
         } catch (\Exception $e) {
             $this->sendExceptionByEmail($module, $e);
         }
@@ -340,15 +339,20 @@ class SyncController extends Controller
                 continue;
             }
 
-            if (isset($recordFromRequest->{$field->column})) {
+            $changeValue = false;
+
+            // We use property_exists() because we want to change value even if is null
+            if (property_exists($recordFromRequest, $field->column)) {
                 $value = $recordFromRequest->{$field->column};
-            } elseif (isset($recordFromRequest->{$field->name})) {
+                $changeValue = true;
+            } elseif (property_exists($recordFromRequest, $field->name)) {
                 $value = $recordFromRequest->{$field->name};
+                $changeValue = true;
             } else {
                 $value = null;
             }
 
-            if ($value) {
+            if ($changeValue) {
                 $record->{$field->column} = $value;
             }
         }
@@ -381,7 +385,11 @@ class SyncController extends Controller
             foreach ($usernames as $username) {
                 $user = User::where('username', $username)->first();
                 if ($user) {
-                    $user->notify(new SyncErrorNotification(uctrans($module->name, $module), $e->getMessage(), $e->getTraceAsString()));
+                    $user->notify(new SyncErrorNotification(
+                        uctrans($module->name, $module),
+                        $e->getMessage(),
+                        $e->getTraceAsString()
+                    ));
                 }
             }
         }

@@ -306,11 +306,31 @@ class SwaggerController extends BaseController
             ]
         ];
 
+        // Select
+        $path["get"]["parameters"][] = [
+            "name" => "select",
+            "in" => "query",
+            "description" => "List of columns to retrieve. Use ';' as separator.",
+            "required" => false,
+            "type" => "string"
+        ];
+
         // Page
         $path["get"]["parameters"][] = [
             "name" => "page",
             "in" => "query",
             "description" => "Pagination page index. Default: 0.",
+            "required" => false,
+            "type" => "integer"
+        ];
+
+        // Length
+        $path["get"]["parameters"][] = [
+            "name" => "length",
+            "in" => "query",
+            "description" => "Pagination length. ".
+                "Default: ".config('uccello.api.items_per_page', 100).". ".
+                "Max: ".config('uccello.api.max_items_per_page', 100).".",
             "required" => false,
             "type" => "integer"
         ];

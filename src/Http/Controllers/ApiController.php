@@ -2,9 +2,9 @@
 
 namespace Uccello\Api\Http\Controllers;
 
-use Schema;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Schema;
 use Uccello\Api\Support\ApiTrait;
 use Uccello\Api\Support\ImageUploadTrait;
 use Uccello\Core\Models\Domain;
@@ -18,8 +18,6 @@ class ApiController extends Controller
 {
     use ApiTrait;
     use ImageUploadTrait;
-
-    const ITEMS_PER_PAGE = 20;
 
     //TODO: Without multi domains (domain = null)
 
@@ -46,10 +44,13 @@ class ApiController extends Controller
     {
         //TODO: Add search conditions
 
+        // Get pagination length
+        $length = $this->getPaginationLength();
+
         // Prepare query
         $query = $this->prepareQueryForApi($domain, $module);
 
-        $records = $query->paginate(env('UCCELLO_API_ITEMS_PER_PAGE', self::ITEMS_PER_PAGE));
+        $records = $query->paginate($length);
 
         // Get formatted records
         $records->getCollection()->transform(function ($record) use ($domain, $module) {

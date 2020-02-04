@@ -133,4 +133,23 @@ trait ApiTrait
     {
         return response()->json(['message' => $message], $statusCode);
     }
+
+    /**
+     * Returns length to use with pagination.
+     * We can define the length with a request param or in the .env file.
+     * If the length is greater than the max allowed length, the max length is used.
+     *
+     * @return int
+     */
+    protected function getPaginationLength()
+    {
+        $length = request('length', config('uccello.api.items_per_page', 100));
+        $maxLength = config('uccello.api.max_items_per_page', 100);
+
+        if ($length >  $maxLength) {
+            $length = $maxLength;
+        }
+
+        return $length;
+    }
 }

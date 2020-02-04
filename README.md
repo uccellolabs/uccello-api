@@ -112,6 +112,20 @@ protected $middleware = [
 php artisan vendor:publish --provider="Spatie\Cors\CorsServiceProvider" --tag="config"
 ```
 
+# Config
+You can add this parameters to `config/uccello.php`:
+
+```php
+return [
+    ...
+    'api' => [
+        'items_per_page' => 300, // Items per page
+        'max_items_per_page' => 800, // Max items per page (useful if length URL param greater than max_item_per_page)
+        'throws_exception' => true, // If true send an email to user with username defined below
+        'username_to_notify_on_exception' => env('USERNAME_TO_NOTIFY_ON_EXCEPTION')
+    ],
+```
+
 # Daily usage
 You can pass several params to the request URL:
 
@@ -120,3 +134,4 @@ You can pass several params to the request URL:
 | descendants |  Activate (1) or not (0) descendant view according to the user's roles.  | 0 | &descendants=1 |
 | order | Semicolon and comma separated list of the order clauses.  | | &order=name,asc;email,desc |
 | with | Semicolon separated list of the relations to add in the response. |  | &with=domain;clients |
+| length | Pagination length. | 100 | &length=300 |

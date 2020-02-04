@@ -132,6 +132,7 @@ You can pass several params to the request URL:
 | Param | Description | Default  | Example |
 |---|---|:---:|---|
 | descendants |  Activate (1) or not (0) descendant view according to the user's roles.  | 0 | &descendants=1 |
+| select | Semicolon separated list of columns to retrieve. | | &select=name;created_at |
 | order | Semicolon and comma separated list of the order clauses.  | | &order=name,asc;email,desc |
 | with | Semicolon separated list of the relations to add in the response. |  | &with=domain;clients |
 | length | Pagination length. | 100 | &length=300 |

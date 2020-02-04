@@ -24,6 +24,26 @@ trait ApiTrait
         $query = $this->addDomainsConditions($domain, $module, $query);
         $query = $this->addOrderByClause($domain, $module, $query);
         $query = $this->addWithClause($domain, $module, $query);
+        $query = $this->addSelectClause($domain, $module, $query); // The last one else all columns are retrieved
+
+        return $query;
+    }
+
+    /**
+     * Adds select into the query according to request params
+     *
+     * @param \Uccello\Core\Models\Domain $domain
+     * @param \Uccello\Core\Models\Module $module
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function addSelectClause(Domain $domain, Module $module, Builder $query): Builder
+    {
+        $columnsToSelect = $this->getColumnsToSelect();
+
+        if ($columnsToSelect) {
+            $query->select($columnsToSelect);
+        }
 
         return $query;
     }
@@ -103,7 +123,14 @@ trait ApiTrait
      */
     protected function getFormattedRecordToDisplay($record, Domain $domain, Module $module)
     {
+        $columnsToSelect = $this->getColumnsToSelect();
+
         foreach ($module->fields as $field) {
+            // We don't want to get formatted values if the field is ignored
+            if (!empty($columnsToSelect) && !in_array($field->column, $columnsToSelect)) {
+                continue;
+            }
+
             $uitype = uitype($field->uitype_id);
 
             // If field name is not defined, it could be because the coloumn name is different.
@@ -151,5 +178,16 @@ trait ApiTrait
         }
 
         return $length;
+    }
+
+    protected function getColumnsToSelect()
+    {
+        $selectParams = [];
+
+        if (request()->has('select')) {
+            $selectParams = explode(';', request('select'));
+        }
+
+        return $selectParams;
     }
 }

@@ -5,6 +5,8 @@ namespace Uccello\Api\Http\Controllers;
 use Illuminate\Routing\Controller as BaseController;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
+use Uccello\Core\Models\Capability;
+use Uccello\Core\Models\Domain;
 
 class ApiAuthController extends BaseController
 {
@@ -83,6 +85,28 @@ class ApiAuthController extends BaseController
     public function refresh()
     {
         return $this->respondWithToken(auth()->refresh());
+    }
+
+    /**
+     * Returns all user capabilities on a domain.
+     *
+     * @param \Uccello\Core\Models\Domain $domain
+     *
+     * @return array
+     */
+    public function capabilities(Domain $domain)
+    {
+        $permissions = [];
+        $capabilities = Capability::all();
+
+        foreach ($domain->modules as $module) {
+            $permissions[$module->name] = [];
+            foreach ($capabilities as $capability) {
+                $permissions[$module->name][$capability->name] = auth()->user()->hasCapabilityOnModule($capability->name, $domain, $module);
+            }
+        }
+
+        return $permissions;
     }
 
     /**

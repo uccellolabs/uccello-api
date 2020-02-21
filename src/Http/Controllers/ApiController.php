@@ -13,7 +13,6 @@ use Uccello\Core\Events\BeforeSaveEvent;
 use Uccello\Core\Events\AfterSaveEvent;
 use Uccello\Core\Events\BeforeDeleteEvent;
 use Uccello\Core\Events\AfterDeleteEvent;
-use Uccello\Core\Models\Capability;
 
 class ApiController extends Controller
 {
@@ -30,28 +29,6 @@ class ApiController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-    }
-
-    /**
-     * Returns all user capabilities on a domain.
-     *
-     * @param \Uccello\Core\Models\Domain $domain
-     *
-     * @return array
-     */
-    public function userCapabilities(Domain $domain)
-    {
-        $permissions = [];
-        $capabilities = Capability::all();
-
-        foreach ($domain->modules as $module) {
-            $permissions[$module->name] = [];
-            foreach ($capabilities as $capability) {
-                $permissions[$module->name][$capability->name] = auth()->user()->hasCapabilityOnModule($capability->name, $domain, $module);
-            }
-        }
-
-        return $permissions;
     }
 
     /**

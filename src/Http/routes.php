@@ -5,10 +5,8 @@ Route::name('api.uccello.')
 
     // Adapt params if we use or not multi domains
     if (!uccello()->useMultiDomains()) {
-        $domainParams = '';
         $domainAndModuleParams = '{module}';
     } else {
-        $domainParams = '{domain}';
         $domainAndModuleParams = '{domain}/{module}';
     }
 
@@ -17,6 +15,7 @@ Route::name('api.uccello.')
     Route::get('auth/logout', 'ApiAuthController@logout')->name('auth.logout');
     Route::get('auth/me', 'ApiAuthController@me')->name('auth.me');
     Route::get('auth/refresh', 'ApiAuthController@refresh')->name('auth.refresh');
+    Route::get('auth/{domain}/capabilities', 'ApiAuthController@capabilities')->name('auth.capabilities');
 
     // CRUD
     Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello.permissions:api-retrieve');
@@ -25,7 +24,6 @@ Route::name('api.uccello.')
     Route::match(['post','put', 'patch'], $domainAndModuleParams.'/{id}', 'ApiController@update')->name('update')->middleware('uccello.permissions:api-update');
     Route::delete($domainAndModuleParams.'/{id}', 'ApiController@destroy')->name('destroy')->middleware('uccello.permissions:api-delete');
     Route::post($domainAndModuleParams.'/upload_img', 'ApiController@uploadImage')->name('upload_image')->middleware('uccello.permissions:api-update');
-    Route::get($domainParams.'/user/permissions/capabilities', 'ApiController@userCapabilities')->name('user_permissions');
 
     // Sync
     Route::match(['get', 'post'], $domainAndModuleParams.'/sync/download', 'SyncController@download')->name('sync.download')->middleware('uccello.permissions:api-retrieve');

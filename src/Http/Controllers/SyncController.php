@@ -348,8 +348,8 @@ class SyncController extends Controller
         // Get pagination length
         $length = $this->getPaginationLength();
 
-        // Launch query
-        $records = $query->paginate($length);
+        // Launch query (retrieve also deleted record)
+        $records = $query->withTrashed()->paginate($length);
 
         // Get formatted records
         $records->getCollection()->transform(function ($record) use ($domain, $module) {

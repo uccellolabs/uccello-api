@@ -50,6 +50,13 @@ class ApiController extends Controller
         // Prepare query
         $query = $this->prepareQueryForApi($domain, $module);
 
+        // Add eventualy deleted record
+        if ($request->only_deleted == 1) {
+            $query->onlyTrashed();
+        } elseif ($request->with_deleted == 1) {
+            $query->withTrashed();
+        }
+
         $records = $query->paginate($length);
 
         // Get formatted records

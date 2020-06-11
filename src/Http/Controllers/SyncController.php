@@ -331,7 +331,7 @@ class SyncController extends Controller
         // Filter results on the update_at date if necessary
         if ($request->date) {
             $date = new Carbon($request->date);
-            $query = $query->where('created_at', '>=', $date)
+            $query->where('created_at', '>=', $date)
                 ->orWhere('updated_at', '>=', $date);
 
                 //TODO: Add list of deleted records
@@ -341,15 +341,22 @@ class SyncController extends Controller
         if ($request->ids) {
             $filteredIds = (array) $request->ids;
             if ($filteredIds) {
-                $query = $query->whereIn($primaryKeyName, $filteredIds);
+                $query->whereIn($primaryKeyName, $filteredIds);
             }
+        }
+
+        // Add eventualy deleted record
+        if ($request->only_deleted == 1) {
+            $query->onlyTrashed();
+        } elseif ($request->with_deleted == 1) {
+            $query->withTrashed();
         }
 
         // Get pagination length
         $length = $this->getPaginationLength();
 
         // Launch query (retrieve also deleted record)
-        $records = $query->withTrashed()->paginate($length);
+        $records = $query->paginate($length);
 
         // Get formatted records
         $records->getCollection()->transform(function ($record) use ($domain, $module) {

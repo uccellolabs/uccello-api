@@ -4,6 +4,7 @@ namespace Uccello\Api\Support;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Searchable\Search;
 use Uccello\Core\Models\Domain;
 use Uccello\Core\Models\Module;
 
@@ -24,6 +25,7 @@ trait ApiTrait
         $query = $this->addDomainsConditions($domain, $module, $query);
         $query = $this->addOrderByClause($domain, $module, $query);
         $query = $this->addWithClause($domain, $module, $query);
+        $query = $this->addWhereClause($domain, $module, $query);
         $query = $this->addSelectClause($domain, $module, $query); // The last one else all columns are retrieved
 
         return $query;
@@ -107,6 +109,35 @@ trait ApiTrait
 
             foreach ($withParams as $withParam) {
                 $query->with($withParam);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Adds where clause into the query according to request params
+     *
+     * @param \Uccello\Core\Models\Domain $domain
+     * @param \Uccello\Core\Models\Module $module
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function addWhereClause(Domain $domain, Module $module, Builder $query): Builder
+    {
+        if (request()->has('q')) {
+            $q = request('q');
+
+            $modelClass = $module->model_class;
+
+            if (method_exists($modelClass, 'getSearchResult') && property_exists($modelClass, 'searchableColumns')) {
+                // Search related records and get all ids
+                $searchResults = new Search();
+                $searchResults->registerModel($modelClass, (array) (new $modelClass)->searchableColumns);
+                $recordIds = $searchResults->search($q)->pluck('searchable.id');
+
+                // Search records linked to record ids got previously
+                $query->whereIn((new $modelClass)->getKeyName(), $recordIds);
             }
         }
 

@@ -18,7 +18,7 @@ Route::name('api.uccello.')
     Route::get('auth/logout', 'ApiAuthController@logout')->name('auth.logout');
     Route::get('auth/me', 'ApiAuthController@me')->name('auth.me');
     Route::get('auth/domains', 'ApiAuthController@domains')->name('auth.domains');
-    Route::get('auth/{domain}/modules', 'ApiAuthController@domains')->name('auth.domains');
+    Route::get('auth/{domain}/modules', 'ApiAuthController@modules')->name('auth.modules');
     Route::get('auth/{domain}/capabilities', 'ApiAuthController@capabilities')->name('auth.capabilities');
 
     // CRUD

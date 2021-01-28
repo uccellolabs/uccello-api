@@ -13,6 +13,7 @@ use Uccello\Core\Events\BeforeSaveEvent;
 use Uccello\Core\Events\AfterSaveEvent;
 use Uccello\Core\Events\BeforeDeleteEvent;
 use Uccello\Core\Events\AfterDeleteEvent;
+use Uccello\Core\Facades\Uccello;
 
 class ApiController extends Controller
 {
@@ -28,7 +29,7 @@ class ApiController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:sanctum');
     }
 
     /**
@@ -40,15 +41,60 @@ class ApiController extends Controller
      * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function index(Domain $domain, Module $module, Request $request)
+    public function describe(?Domain $domain, Module $module, Request $request)
     {
-        //TODO: Add search conditions
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
+        $description = [
+            'module' => $module,
+            'fields' => []
+        ];
+
+        foreach ($module->fields()->get() as $field) {
+            $fieldData = $field;
+
+            $uitype = uitype($field->uitype_id);
+            $fieldData->column = $field->column;
+            $fieldData->uitype = $uitype->name ?? null;
+            $fieldData->required = $field->required;
+            $description["fields"][] = $fieldData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'description' => $description
+        ]);
+    }
+
+    /**
+     * Display a listing of the resources.
+     * Filter on domain if domain_id column exists.
+     *
+     * @param  \Uccello\Core\Models\Domain $domain
+     * @param  \Uccello\Core\Models\Module $module
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function index(?Domain $domain, Module $module, Request $request)
+    {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
 
         // Get pagination length
         $length = $this->getPaginationLength();
 
         // Prepare query
         $query = $this->prepareQueryForApi($domain, $module);
+
+        // Add conditions
+        if ($request->has('conditions')) {
+            foreach ((array) $request->conditions as $key => $value) {
+                $query->where($key, $value);
+            }
+        }
 
         // Add eventualy deleted record
         if ($request->only_deleted == 1) {
@@ -75,8 +121,12 @@ class ApiController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Domain $domain, Module $module, Request $request)
+    public function store(?Domain $domain, Module $module, Request $request)
     {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
         // Get model model class
         $modelClass = $module->model_class;
         $record = new $modelClass();
@@ -119,8 +169,12 @@ class ApiController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(Domain $domain, Module $module, int $id)
+    public function show(?Domain $domain, Module $module, int $id)
     {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
         // Get model model class
         $modelClass = $module->model_class;
 
@@ -145,6 +199,10 @@ class ApiController extends Controller
      */
     public function update(Domain $domain, Module $module, int $id, Request $request)
     {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
         // Get model model class
         $modelClass = $module->model_class;
         $record = $modelClass::find($id);
@@ -188,6 +246,10 @@ class ApiController extends Controller
      */
     public function destroy(Domain $domain, Module $module, $id, Request $request)
     {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
         // Get model model class
         $modelClass = $module->model_class;
 

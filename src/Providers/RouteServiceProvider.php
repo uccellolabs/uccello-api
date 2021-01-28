@@ -16,16 +16,10 @@ class RouteServiceProvider extends DefaultRouteServiceProvider
     public function boot()
     {
         parent::boot();
-    }
 
-    /**
-     * @inheritDoc
-     */
-    public function map()
-    {
-        parent::map();
-
-        $this->mapUccelloRoutes();
+        $this->routes(function () {
+            $this->mapUccelloRoutes();
+        });
     }
 
     /**

@@ -3,8 +3,9 @@
 namespace Uccello\Api\Http\Controllers;
 
 use Illuminate\Routing\Controller as BaseController;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Uccello\Core\Facades\Uccello;
 use Uccello\Core\Models\Capability;
 use Uccello\Core\Models\Domain;
 
@@ -17,7 +18,7 @@ class ApiAuthController extends BaseController
      */
     public function __construct()
     {
-        $this->middleware('auth:api', [ 'except' => [ 'login' ] ]);
+        $this->middleware('auth:sanctum', [ 'except' => [ 'login' ] ]);
     }
 
     /**
@@ -37,8 +38,7 @@ class ApiAuthController extends BaseController
         $validator = Validator::make($input, $rules);
 
         if ($validator->fails()) {
-            $error = $validator->messages();
-            return response()->json([ 'success'=> false, 'error'=> $error ], 400);
+            return response()->json(['success' => false, 'validation_errors' => $validator->errors()]);
         }
 
         // Detect if it is an email or an username
@@ -46,13 +46,21 @@ class ApiAuthController extends BaseController
         $loginFieldName = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         request()->merge([ $loginFieldName => $login ]);
 
-        $credentials = request([ $loginFieldName, 'password' ]);
+        $credentials = request([$loginFieldName, 'password']);
 
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json([ 'error' => 'User unauthorized' ], 401);
+        if (!Auth::once($credentials)) {
+            return response()->json(['success' => false, 'message' => 'User unauthorized'], 401);
         }
 
-        return $this->respondWithToken($token);
+        $user = Auth::user();
+        $token = $user->createToken('token')->plainTextToken;
+
+        return response()->json([
+            "success" => true,
+            "access_token" => $token,
+            "multi_domains" => Uccello::useMultiDomains(),
+            "user" => $user
+        ]);
     }
 
     /**
@@ -62,7 +70,12 @@ class ApiAuthController extends BaseController
      */
     public function me()
     {
-        return response()->json(JWTAuth::user());
+        $user = Auth::user();
+        if (!is_null($user)) {
+            return response()->json(['success' => true, 'user' => $user]);
+        } else {
+            return response()->json(['success' => false, 'message' => 'User not authenticated']);
+        }
     }
 
     /**
@@ -72,19 +85,9 @@ class ApiAuthController extends BaseController
      */
     public function logout()
     {
-        auth()->logout();
+        Auth::logout();
 
-        return response()->json([ 'message' => 'Successfully logged out' ]);
-    }
-
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function refresh()
-    {
-        return $this->respondWithToken(auth()->refresh());
+        return response()->json(['success' => true, 'message' => 'Successfully logged out']);
     }
 
     /**
@@ -102,26 +105,46 @@ class ApiAuthController extends BaseController
         foreach ($domain->modules as $module) {
             $permissions[$module->name] = [];
             foreach ($capabilities as $capability) {
-                $permissions[$module->name][$capability->name] = auth()->user()->hasCapabilityOnModule($capability->name, $domain, $module);
+                $permissions[$module->name][$capability->name] = Auth::user()->hasCapabilityOnModule($capability->name, $domain, $module);
             }
         }
 
         return $permissions;
     }
 
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function respondWithToken($token)
+    public function domains()
     {
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => JWTAuth::factory()->getTTL() * 60
-        ]);
+        $allowedDomains = collect();
+
+        $user = Auth::user();
+        $domains = Domain::orderBy('name', 'asc')->get();
+
+        foreach ($domains as $domain) {
+            if ($user->is_admin === true || $user->hasRoleOnDomain($domain)) {
+                $allowedDomains[] = $domain;
+            }
+        }
+
+        return $allowedDomains;
+    }
+
+    public function modules(?Domain $domain)
+    {
+        if (!Uccello::useMultiDomains()) {
+            $domain = Domain::firstOrFail();
+        }
+
+        $allowedModules = collect();
+
+        $user = Auth::user();
+        $modules = $domain->modules()->get();
+
+        foreach ($modules as $module) {
+            if ($user->capabilitiesOnModule($domain, $module)->count() > 0) {
+                $allowedModules[] = $module;
+            }
+        }
+
+        return $allowedModules;
     }
 }

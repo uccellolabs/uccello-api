@@ -1,10 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use Uccello\Core\Facades\Uccello;
+
 Route::name('api.uccello.')
-->group(function() {
+->group(function () {
 
     // Adapt params if we use or not multi domains
-    if (!uccello()->useMultiDomains()) {
+    if (!Uccello::useMultiDomains()) {
         $domainAndModuleParams = '{module}';
     } else {
         $domainAndModuleParams = '{domain}/{module}';
@@ -14,10 +17,12 @@ Route::name('api.uccello.')
     Route::post('auth/login', 'ApiAuthController@login')->name('auth.login');
     Route::get('auth/logout', 'ApiAuthController@logout')->name('auth.logout');
     Route::get('auth/me', 'ApiAuthController@me')->name('auth.me');
-    Route::get('auth/refresh', 'ApiAuthController@refresh')->name('auth.refresh');
+    Route::get('auth/domains', 'ApiAuthController@domains')->name('auth.domains');
+    Route::get('auth/{domain}/modules', 'ApiAuthController@domains')->name('auth.domains');
     Route::get('auth/{domain}/capabilities', 'ApiAuthController@capabilities')->name('auth.capabilities');
 
     // CRUD
+    Route::get($domainAndModuleParams.'/describe', 'ApiController@describe')->name('describe')->middleware('uccello.permissions:api-retrieve');
     Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello.permissions:api-retrieve');
     Route::get($domainAndModuleParams.'/{id}', 'ApiController@show')->name('show')->middleware('uccello.permissions:api-retrieve');
     Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello.permissions:create');

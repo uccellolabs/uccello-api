@@ -10,10 +10,8 @@
         }
     ],
     "require": {
-        "darkaonline/l5-swagger": "5.8.*",
-        "spatie/laravel-cors": "^1.5",
-        "tymon/jwt-auth": "1.0.*",
-        "uccello/uccello": "1.*"
+        "laravel/sanctum": "^2.9",
+        "uccello/uccello": "2.*"
     },
     "autoload": {
         "psr-4": {

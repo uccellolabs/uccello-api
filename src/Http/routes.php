@@ -6,12 +6,7 @@ use Uccello\Core\Facades\Uccello;
 Route::name('api.uccello.')
 ->group(function () {
 
-    // Adapt params if we use or not multi domains
-    if (!Uccello::useMultiDomains()) {
-        $domainAndModuleParams = '{module}';
-    } else {
-        $domainAndModuleParams = '{domain}/{module}';
-    }
+    $domainAndModuleParams = '{domain}/{module}';
 
     // Auth
     Route::post('auth/login', 'ApiAuthController@login')->name('auth.login');

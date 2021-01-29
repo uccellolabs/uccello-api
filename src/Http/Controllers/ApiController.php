@@ -41,24 +41,26 @@ class ApiController extends Controller
      */
     public function describe(?Domain $domain, Module $module, Request $request)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
+        $moduleData = $module;
+        $moduleData->translation = uctrans($module->name, $module);
 
-        $description = [
-            'module' => $module,
-            'fields' => []
-        ];
+        $fields = collect();
 
         foreach ($module->fields()->get() as $field) {
             $fieldData = $field;
 
             $uitype = uitype($field->uitype_id);
+            $fieldData->translation = uctrans('field.'.$field->name, $module);
             $fieldData->column = $field->column;
             $fieldData->uitype = $uitype->name ?? null;
             $fieldData->required = $field->required;
-            $description["fields"][] = $fieldData;
+            $fields[] = $fieldData;
         }
+
+        $description = [
+            'module' => $moduleData,
+            'fields' => $fields->sortBy('sequence')
+        ];
 
         return response()->json([
             'success' => true,
@@ -77,10 +79,6 @@ class ApiController extends Controller
      */
     public function index(?Domain $domain, Module $module, Request $request)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
-
         // Get pagination length
         $length = $this->getPaginationLength();
 
@@ -121,10 +119,6 @@ class ApiController extends Controller
      */
     public function store(?Domain $domain, Module $module, Request $request)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
-
         // Get model model class
         $modelClass = $module->model_class;
         $record = new $modelClass();
@@ -169,10 +163,6 @@ class ApiController extends Controller
      */
     public function show(?Domain $domain, Module $module, int $id)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
-
         // Get model model class
         $modelClass = $module->model_class;
 
@@ -197,10 +187,6 @@ class ApiController extends Controller
      */
     public function update(Domain $domain, Module $module, int $id, Request $request)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
-
         // Get model model class
         $modelClass = $module->model_class;
         $record = $modelClass::find($id);
@@ -230,7 +216,6 @@ class ApiController extends Controller
 
         // Get formatted record
         return $this->getFormattedRecordToDisplay($record, $domain, $module);
-
     }
 
     /**
@@ -244,10 +229,6 @@ class ApiController extends Controller
      */
     public function destroy(Domain $domain, Module $module, $id, Request $request)
     {
-        if (!Uccello::useMultiDomains()) {
-            $domain = Domain::firstOrFail();
-        }
-
         // Get model model class
         $modelClass = $module->model_class;
 

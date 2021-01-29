@@ -125,7 +125,7 @@ class ApiAuthController extends BaseController
             }
         }
 
-        return $allowedDomains;
+        return $allowedDomains->sortBy('name');
     }
 
     public function modules(?Domain $domain)
@@ -141,10 +141,13 @@ class ApiAuthController extends BaseController
 
         foreach ($modules as $module) {
             if ($user->capabilitiesOnModule($domain, $module)->count() > 0) {
-                $allowedModules[] = $module;
+                $moduleData = $module;
+                $moduleData->translation = uctrans($module->name, $module);
+                $moduleData->crud = !empty($module->model_class);
+                $allowedModules[] = $moduleData;
             }
         }
 
-        return $allowedModules;
+        return $allowedModules->sortBy('translation');
     }
 }

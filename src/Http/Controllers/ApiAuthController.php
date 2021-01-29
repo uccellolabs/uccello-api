@@ -125,7 +125,7 @@ class ApiAuthController extends BaseController
             }
         }
 
-        return $allowedDomains->sortBy('name');
+        return $allowedDomains;
     }
 
     public function modules(?Domain $domain)
@@ -148,6 +148,6 @@ class ApiAuthController extends BaseController
             }
         }
 
-        return $allowedModules->sortBy('translation');
+        return $allowedModules;
     }
 }

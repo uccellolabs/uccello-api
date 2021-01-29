@@ -54,6 +54,16 @@ class ApiController extends Controller
             $fieldData->column = $field->column;
             $fieldData->uitype = $uitype->name ?? null;
             $fieldData->required = $field->required;
+
+            // Add choices with translations
+            if ($field->data->choices ?? false) {
+                $choices = [];
+                foreach ($field->data->choices as $choice) {
+                    $choices[$choice] = uctrans($choice, $module);
+                }
+                $fieldData->choices = $choices;
+            }
+
             $fields[] = $fieldData;
         }
 

@@ -19,6 +19,7 @@ Route::name('api.uccello.')
     // CRUD
     Route::get($domainAndModuleParams.'/describe', 'ApiController@describe')->name('describe')->middleware('uccello.permissions:api-retrieve');
     Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello.permissions:api-retrieve');
+    Route::post($domainAndModuleParams.'/search', 'ApiController@search')->name('search')->middleware('uccello.permissions:api-retrieve');
     Route::get($domainAndModuleParams.'/{id}', 'ApiController@show')->name('show')->middleware('uccello.permissions:api-retrieve');
     Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello.permissions:create');
     Route::match(['post','put', 'patch'], $domainAndModuleParams.'/{id}', 'ApiController@update')->name('update')->middleware('uccello.permissions:api-update');

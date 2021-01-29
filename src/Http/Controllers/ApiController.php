@@ -85,6 +85,40 @@ class ApiController extends Controller
         // Prepare query
         $query = $this->prepareQueryForApi($domain, $module);
 
+        // Add eventualy deleted record
+        if ($request->only_deleted == 1) {
+            $query->onlyTrashed();
+        } elseif ($request->with_deleted == 1) {
+            $query->withTrashed();
+        }
+
+        $records = $query->paginate($length);
+
+        // Get formatted records
+        $records->getCollection()->transform(function ($record) use ($domain, $module) {
+            return $this->getFormattedRecordToDisplay($record, $domain, $module);
+        });
+
+        return $records;
+    }
+
+    /**
+     * Search a listing of the resources with conditions
+     * Filter on domain if domain_id column exists.
+     *
+     * @param  \Uccello\Core\Models\Domain $domain
+     * @param  \Uccello\Core\Models\Module $module
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function search(?Domain $domain, Module $module, Request $request)
+    {
+        // Get pagination length
+        $length = $this->getPaginationLength();
+
+        // Prepare query
+        $query = $this->prepareQueryForApi($domain, $module);
+
         // Add conditions
         if ($request->has('conditions')) {
             foreach ((array) $request->conditions as $key => $value) {

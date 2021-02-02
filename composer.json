@@ -11,7 +11,8 @@
     ],
     "require": {
         "laravel/sanctum": "^2.9",
-        "uccello/uccello": "2.*"
+        "uccello/uccello": "2.*",
+        "darkaonline/l5-swagger": "^8.0"
     },
     "autoload": {
         "psr-4": {

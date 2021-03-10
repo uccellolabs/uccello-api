@@ -46,7 +46,7 @@ class ApiController extends Controller
 
         $fields = collect();
 
-        foreach ($module->fields()->get() as $field) {
+        foreach ($module->fields()->orderBy('sequence')->get() as $field) {
             $fieldData = $field;
 
             $uitype = uitype($field->uitype_id);
@@ -69,7 +69,7 @@ class ApiController extends Controller
 
         $description = [
             'module' => $moduleData,
-            'fields' => $fields->sortBy('sequence')
+            'fields' => $fields
         ];
 
         return response()->json([

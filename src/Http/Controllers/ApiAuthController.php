@@ -144,7 +144,7 @@ class ApiAuthController extends BaseController
         $modules = $domain->modules()->get();
 
         foreach ($modules as $module) {
-            if ($user->capabilitiesOnModule($domain, $module)->count() > 0) {
+            if ($user->is_admin || $user->capabilitiesOnModule($domain, $module)->count() > 0) {
                 $moduleData = $module;
                 $moduleData->translation = uctrans($module->name, $module);
                 $moduleData->crud = !empty($module->model_class);

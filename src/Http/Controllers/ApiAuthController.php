@@ -85,7 +85,11 @@ class ApiAuthController extends BaseController
      */
     public function logout()
     {
-        Auth::logout();
+        // Get user who requested the logout
+        $user = Auth::user();
+
+        // Revoke current user token
+        $user->tokens()->where('id', $user->currentAccessToken()->id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Successfully logged out']);
     }

@@ -17,19 +17,19 @@ Route::name('api.uccello.')
     Route::get('auth/{domain}/capabilities', 'ApiAuthController@capabilities')->name('auth.capabilities');
 
     // CRUD
-    Route::get($domainAndModuleParams.'/describe', 'ApiController@describe')->name('describe')->middleware('uccello.permissions:api-retrieve');
-    Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello.permissions:api-retrieve');
-    Route::post($domainAndModuleParams.'/search', 'ApiController@search')->name('search')->middleware('uccello.permissions:api-retrieve');
-    Route::get($domainAndModuleParams.'/{id}', 'ApiController@show')->name('show')->middleware('uccello.permissions:api-retrieve');
+    Route::get($domainAndModuleParams.'/describe', 'ApiController@describe')->name('describe')->middleware('uccello-api.permissions:retrieve');
+    Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello-api.permissions:retrieve');
+    Route::post($domainAndModuleParams.'/search', 'ApiController@search')->name('search')->middleware('uccello-api.permissions:retrieve');
+    Route::get($domainAndModuleParams.'/{id}', 'ApiController@show')->name('show')->middleware('uccello-api.permissions:retrieve');
     Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello.permissions:create');
-    Route::match(['post','put', 'patch'], $domainAndModuleParams.'/{id}', 'ApiController@update')->name('update')->middleware('uccello.permissions:api-update');
-    Route::delete($domainAndModuleParams.'/{id}', 'ApiController@destroy')->name('destroy')->middleware('uccello.permissions:api-delete');
-    Route::post($domainAndModuleParams.'/upload_img', 'ApiController@uploadImage')->name('upload_image')->middleware('uccello.permissions:api-update');
+    Route::match(['post','put', 'patch'], $domainAndModuleParams.'/{id}', 'ApiController@update')->name('update')->middleware('uccello-api.permissions:update');
+    Route::delete($domainAndModuleParams.'/{id}', 'ApiController@destroy')->name('destroy')->middleware('uccello-api.permissions:delete');
+    Route::post($domainAndModuleParams.'/upload_img', 'ApiController@uploadImage')->name('upload_image')->middleware('uccello-api.permissions:update');
 
     // Sync
-    Route::match(['get', 'post'], $domainAndModuleParams.'/sync/download', 'SyncController@download')->name('sync.download')->middleware('uccello.permissions:api-retrieve');
-    Route::post($domainAndModuleParams.'/sync/upload', 'SyncController@upload')->name('sync.upload')->middleware('uccello.permissions:api-create');
-    Route::post($domainAndModuleParams.'/sync/upload_img', 'SyncController@uploadImage')->name('sync.upload_image')->middleware('uccello.permissions:api-update');
-    Route::post($domainAndModuleParams.'/sync/delete', 'SyncController@delete')->name('sync.delete')->middleware('uccello.permissions:api-delete');
-    Route::post($domainAndModuleParams.'/sync/latest', 'SyncController@latest')->name('sync.latest')->middleware('uccello.permissions:api-retrieve');
+    Route::match(['get', 'post'], $domainAndModuleParams.'/sync/download', 'SyncController@download')->name('sync.download')->middleware('uccello-api.permissions:retrieve');
+    Route::post($domainAndModuleParams.'/sync/upload', 'SyncController@upload')->name('sync.upload')->middleware('uccello-api.permissions:create');
+    Route::post($domainAndModuleParams.'/sync/upload_img', 'SyncController@uploadImage')->name('sync.upload_image')->middleware('uccello-api.permissions:update');
+    Route::post($domainAndModuleParams.'/sync/delete', 'SyncController@delete')->name('sync.delete')->middleware('uccello-api.permissions:delete');
+    Route::post($domainAndModuleParams.'/sync/latest', 'SyncController@latest')->name('sync.latest')->middleware('uccello-api.permissions:retrieve');
 });

@@ -4,9 +4,8 @@ namespace Uccello\Api\Http\Controllers;
 
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use Uccello\Api\Models\ApiToken;
 use Uccello\Core\Facades\Uccello;
-use Uccello\Core\Models\Capability;
 use Uccello\Core\Models\Domain;
 
 class ApiAuthController extends BaseController
@@ -18,49 +17,7 @@ class ApiAuthController extends BaseController
      */
     public function __construct()
     {
-        $this->middleware('auth:sanctum', [ 'except' => [ 'login' ] ]);
-    }
-
-    /**
-     * Get a JWT via given credentials.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function login()
-    {
-        // Check if fields are defined
-        $rules = [
-            'login' => 'required',
-            'password' => 'required',
-        ];
-
-        $input = request()->only('login', 'password');
-        $validator = Validator::make($input, $rules);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'validation_errors' => $validator->errors()]);
-        }
-
-        // Detect if it is an email or an username
-        $login = request()->get('login');
-        $loginFieldName = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        request()->merge([ $loginFieldName => $login ]);
-
-        $credentials = request([$loginFieldName, 'password']);
-
-        if (!Auth::once($credentials)) {
-            return response()->json(['success' => false, 'message' => 'User unauthorized'], 401);
-        }
-
-        $user = Auth::user();
-        $token = $user->createToken('token')->plainTextToken;
-
-        return response()->json([
-            "success" => true,
-            "access_token" => $token,
-            "multi_domains" => Uccello::useMultiDomains(),
-            "user" => $user
-        ]);
+        $this->middleware('auth:sanctum');
     }
 
     /**
@@ -79,22 +36,6 @@ class ApiAuthController extends BaseController
     }
 
     /**
-     * Log the user out (Invalidate the token).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function logout()
-    {
-        // Get user who requested the logout
-        $user = Auth::user();
-
-        // Revoke current user token
-        $user->tokens()->where('id', $user->currentAccessToken()->id)->delete();
-
-        return response()->json(['success' => true, 'message' => 'Successfully logged out']);
-    }
-
-    /**
      * Returns all user capabilities on a domain.
      *
      * @param \Uccello\Core\Models\Domain $domain
@@ -104,12 +45,13 @@ class ApiAuthController extends BaseController
     public function capabilities(Domain $domain)
     {
         $permissions = [];
-        $capabilities = Capability::all();
+
+        $apiToken = ApiToken::where('user_id', Auth::id())->first();
 
         foreach ($domain->modules as $module) {
             $permissions[$module->name] = [];
-            foreach ($capabilities as $capability) {
-                $permissions[$module->name][$capability->name] = Auth::user()->hasCapabilityOnModule($capability->name, $domain, $module);
+            foreach (['create', 'retrieve', 'update', 'delete'] as $capability) {
+                $permissions[$module->name][$capability] = optional(optional($apiToken->permissions)->{$module->name})->{$capability} ? true : false;
             }
         }
 

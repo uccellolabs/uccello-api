@@ -24,7 +24,6 @@ class CreateApiTokenModule extends Migration
         $this->activateModuleOnDomains($module);
         $this->createTabsBlocksFields($module);
         $this->createFilters($module);
-        $this->createRelatedLists($module);
     }
 
     /**

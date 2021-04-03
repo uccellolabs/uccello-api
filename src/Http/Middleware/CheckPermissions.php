@@ -43,6 +43,11 @@ class CheckPermissions
         // Retrieve Api Token
         $this->retrieveApiTokenFromAuthenticatedUser();
 
+        // Check if domain is allowed
+        if (!$this->isDomainAllowed($domain)) {
+            return response()->json(['success' => false, 'message' => 'Domain not allowed'], 403);
+        }
+
         // Check if IP is allowed
         if (!$this->isIpAllowed()) {
             return response()->json(['success' => false, 'message' => 'IP not allowed'], 403);
@@ -69,6 +74,18 @@ class CheckPermissions
     private function retrieveApiTokenFromAuthenticatedUser()
     {
         $this->apiToken = ApiToken::where('user_id', Auth::id())->first();
+    }
+
+    /**
+     * Check if is same domain as the token one
+     *
+     * @param [type] $domain
+     *
+     * @return boolean
+     */
+    private function isDomainAllowed($domain)
+    {
+        return $this->apiToken->domain_id === $domain->getKey();
     }
 
     /**

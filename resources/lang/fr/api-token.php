@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'api-token' => 'Tokens API',
+    'api-token' => 'API Tokens',
     'tab' => [
         'main' => 'Détails'
     ],

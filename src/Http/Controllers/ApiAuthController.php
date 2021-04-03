@@ -62,13 +62,11 @@ class ApiAuthController extends BaseController
     {
         $allowedDomains = collect();
 
-        $user = Auth::user();
-        $domains = Domain::orderBy('name', 'asc')->get();
+        $apiToken = ApiToken::where('user_id', Auth::id())->first();
+        $tokenDomain = Domain::find($apiToken->domain_id);
 
-        foreach ($domains as $domain) {
-            if ($user->is_admin === true || $user->hasRoleOnDomain($domain)) {
-                $allowedDomains[] = $domain;
-            }
+        if ($tokenDomain) {
+            $allowedDomains[] = $tokenDomain;
         }
 
         return $allowedDomains;
@@ -82,11 +80,11 @@ class ApiAuthController extends BaseController
 
         $allowedModules = collect();
 
-        $user = Auth::user();
+        $apiToken = ApiToken::where('user_id', Auth::id())->first();
         $modules = $domain->modules()->get();
 
         foreach ($modules as $module) {
-            if ($user->is_admin || $user->capabilitiesOnModule($domain, $module)->count() > 0) {
+            if (optional($apiToken->permissions)->{$module->name}) {
                 $moduleData = $module;
                 $moduleData->translation = uctrans($module->name, $module);
                 $moduleData->crud = !empty($module->model_class);

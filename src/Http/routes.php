@@ -21,7 +21,7 @@ Route::name('api.uccello.')
     Route::get($domainAndModuleParams, 'ApiController@index')->name('index')->middleware('uccello-api.permissions:retrieve');
     Route::post($domainAndModuleParams.'/search', 'ApiController@search')->name('search')->middleware('uccello-api.permissions:retrieve');
     Route::get($domainAndModuleParams.'/{id}', 'ApiController@show')->name('show')->middleware('uccello-api.permissions:retrieve');
-    Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello.permissions:create');
+    Route::post($domainAndModuleParams, 'ApiController@store')->name('store')->middleware('uccello-api.permissions:create');
     Route::match(['post','put', 'patch'], $domainAndModuleParams.'/{id}', 'ApiController@update')->name('update')->middleware('uccello-api.permissions:update');
     Route::delete($domainAndModuleParams.'/{id}', 'ApiController@destroy')->name('destroy')->middleware('uccello-api.permissions:delete');
     Route::post($domainAndModuleParams.'/upload_img', 'ApiController@uploadImage')->name('upload_image')->middleware('uccello-api.permissions:update');

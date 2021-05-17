@@ -189,7 +189,8 @@ class ApiController extends Controller
             // If the field exists format the value and store it in the good model column
             if (!is_null($field)) {
                 $column = $field->column;
-                $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                // $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                $record->$column = $value; // Useful for setting raw data (e.g. Zapier)
             }
         }
 
@@ -256,7 +257,8 @@ class ApiController extends Controller
             // If the field exists format the value and store it in the good model column
             if (!is_null($field)) {
                 $column = $field->column;
-                $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                // $record->$column = $field->uitype->getFormattedValueToSave($request, $field, $value, $record, $domain, $module);
+                $record->$column = $value; // Useful for setting raw data (e.g. Zapier)
             }
         }
 

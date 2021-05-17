@@ -50,10 +50,21 @@ class ApiController extends Controller
             $fieldData = $field;
 
             $uitype = uitype($field->uitype_id);
-            $fieldData->translation = uctrans('field.'.$field->name, $module);
+            $displaytype = displaytype($field->displaytype_id);
+
+            $displaytypeData = $this->getDisplaytypeData($displaytype);
+
             $fieldData->column = $field->column;
+            unset($fieldData->uitype); // Because $field->column load uitype automaticaly
+
+            $fieldData->translation = uctrans('field.'.$field->name, $module);
             $fieldData->uitype = $uitype->name ?? null;
+            $fieldData->displaytype = $displaytype->name ?? null;
             $fieldData->required = $field->required;
+            $fieldData->isVisibleInListView = $displaytypeData['list'];
+            $fieldData->isVisibleInDetailView = $displaytypeData['detail'];
+            $fieldData->isVisibleInCreateView = $displaytypeData['create'];
+            $fieldData->isVisibleInEditView = $displaytypeData['edit'];
 
             // Add choices with translations
             if ($field->data->choices ?? false) {
@@ -296,5 +307,29 @@ class ApiController extends Controller
             "message" => 'Record deleted',
             "id" => $id
         ]);
+    }
+
+    private function getDisplaytypeData($displaytype)
+    {
+        $data = [
+            'list' => false,
+            'detail' => false,
+            'create' => false,
+            'edit' => false,
+        ];
+
+        if ($displaytype) {
+            $displaytypeClass = $displaytype->class;
+            $displaytypeInstance = new $displaytypeClass;
+
+            $data = [
+                'list' => $displaytypeInstance->isListable(),
+                'detail' => $displaytypeInstance->isDetailable(),
+                'create' => $displaytypeInstance->isCreateable(),
+                'edit' => $displaytypeInstance->isEditable(),
+            ];
+        }
+
+        return $data;
     }
 }

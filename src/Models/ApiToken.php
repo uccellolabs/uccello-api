@@ -5,8 +5,10 @@ namespace Uccello\Api\Models;
 use App\Models\UccelloModel;
 use App\Models\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Uccello\Core\Models\UserSettings;
 use Uccello\Core\Support\Traits\UccelloModule;
 
 class ApiToken extends UccelloModel
@@ -87,7 +89,7 @@ class ApiToken extends UccelloModel
 
     protected function createTokenUser()
     {
-        return User::create([
+        $user = User::create([
             'username' => Str::uuid(),
             'name' => $this->label,
             'email' => 'token-'.date('YmdHis').'@faker.tld',
@@ -95,5 +97,13 @@ class ApiToken extends UccelloModel
             'type' => 'token',
             'domain_id' => $this->domain_id
         ]);
+
+        // Set same locale than the authenticated user
+        UserSettings::create([
+            'user_id' => $user->getKey(),
+            'data' => ['locale' => Auth::user()->getSettings('locale', config('app.locale'))]
+        ]);
+
+        return $user;
     }
 }

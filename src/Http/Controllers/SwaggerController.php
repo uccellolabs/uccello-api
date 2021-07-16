@@ -23,7 +23,7 @@ class SwaggerController extends BaseController
      */
     public function docs(?Domain $domain)
     {
-        if (!$domain) {
+        if (!$domain->id) {
             $domain = Domain::first();
         }
 
@@ -67,7 +67,7 @@ class SwaggerController extends BaseController
      */
     public function api(?Domain $domain, Request $request)
     {
-        if (!$domain) {
+        if (!$domain->id) {
             $domain = Domain::first();
         }
 
@@ -161,7 +161,7 @@ class SwaggerController extends BaseController
                 $createPath ?? []
             );
 
-            if(empty($paths["/$domainSlug/$moduleName"])) {
+            if (empty($paths["/$domainSlug/$moduleName"])) {
                 unset($paths["/$domainSlug/$moduleName"]);
             }
 
@@ -172,7 +172,7 @@ class SwaggerController extends BaseController
                 $deletePath ?? []
             );
 
-            if(empty($paths["/$domainSlug/$moduleName/{id}"])) {
+            if (empty($paths["/$domainSlug/$moduleName/{id}"])) {
                 unset($paths["/$domainSlug/$moduleName/{id}"]);
             }
         }
@@ -257,8 +257,7 @@ class SwaggerController extends BaseController
         ];
 
         // If "searchable" property exists in the entity class, add "q" parameter
-        if(property_exists($module->model_class, "searchableColumns"))
-        {
+        if (property_exists($module->model_class, "searchableColumns")) {
             $searchable = (new $module->model_class)->searchableColumns;
 
             $path["get"]["parameters"][] = [
@@ -465,7 +464,7 @@ class SwaggerController extends BaseController
         ];
     }
 
-    protected function generateModuleFieldsParameters(Module $module, $type, $checkRequired=true)
+    protected function generateModuleFieldsParameters(Module $module, $type, $checkRequired = true)
     {
         $parameters = [];
 

@@ -2,9 +2,9 @@
 
 namespace Uccello\Api\Http\Controllers;
 
-use L5Swagger\Generator;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Request as FacadesRequest;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\URL;
 use Uccello\Core\Models\Domain;
@@ -42,12 +42,9 @@ class SwaggerController extends BaseController
                 request()->getScheme()
             ],
             "paths" => array_merge(
-                    $this->generateLoginPath(),
-                    $this->generateUserInfoPath(),
-                    $this->generateRefreshPath(),
-                    $this->generateLogoutPath(),
-                    $this->generateModulesPaths()
-                ),
+                $this->generateUserInfoPath(),
+                $this->generateModulesPaths()
+            ),
             "securityDefinitions" => [
                 "Bearer" => [
                     "name" => "Authorization",
@@ -68,83 +65,37 @@ class SwaggerController extends BaseController
      *
      * @return \Response
      */
-    public function api(?Domain $domain)
+    public function api(?Domain $domain, Request $request)
     {
         if (!$domain) {
             $domain = Domain::first();
         }
 
-        if (config('l5-swagger.generate_always')) {
-            Generator::generateDocs();
-        }
-        if ($proxy = config('l5-swagger.proxy')) {
-            if (!is_array($proxy)) {
+        $documentation = 'default';
+        $config = config('l5-swagger.defaults');
+
+        if ($proxy = $config['proxy']) {
+            if (! is_array($proxy)) {
                 $proxy = [$proxy];
             }
-            Request::setTrustedProxies($proxy, \Illuminate\Http\Request::HEADER_X_FORWARDED_ALL);
+            Request::setTrustedProxies($proxy, Request::HEADER_X_FORWARDED_ALL);
         }
+
+        $urlToDocs = ucroute('api.uccello.doc.json', $domain);
+
+
         // Need the / at the end to avoid CORS errors on Homestead systems.
-        $response = Response::make(
+        return Response::make(
             view('l5-swagger::index', [
-                'secure' => Request::secure(),
-                'urlToDocs' => ucroute('api.uccello.doc.json', $domain),
-                'operationsSorter' => config('l5-swagger.operations_sort'),
-                'configUrl' => config('l5-swagger.additional_config_url'),
-                'validatorUrl' => config('l5-swagger.validator_url'),
+                'documentation' => $documentation,
+                'secure' => FacadesRequest::secure(),
+                'urlToDocs' => $urlToDocs,
+                'operationsSorter' => $config['operations_sort'],
+                'configUrl' => $config['additional_config_url'],
+                'validatorUrl' => $config['validator_url'],
             ]),
             200
         );
-        return $response;
-    }
-
-    protected function generateLoginPath()
-    {
-        return [
-            "/auth/login" => [
-                "post" => [
-                    "summary" => "Login",
-                    "description" => "The Login endpoint allows an user to authentificate itself using his credentials.
-                    You must use the returned token in the header of _all your other calls_ to the API.
-                    **Autorization: Bearer {token}**",
-                    "consumes" => [
-                        "multipart/form-data"
-                    ],
-                    "parameters" => [
-                        [
-                            "name" => "login",
-                            "in" => "formData",
-                            "description" => "The user name for login",
-                            "required" => true,
-                            "type" => "string"
-                        ],
-                        [
-                            "name" => "password",
-                            "in" => "formData",
-                            "description" => "The password for login in clear text",
-                            "required" => true,
-                            "type" => "string",
-                            "format" => "password"
-                        ]
-                    ],
-                    "tags" => [
-                        "Auth",
-                    ],
-                    "responses" => [
-                        "200" => [
-                            "description" => "Token to use in all your calls to the API"
-                        ],
-
-                        "400" => [
-                            "description" => "Invalid username/password supplied"
-                        ],
-
-                        "default" => [
-                            "description" => "Unexpected error"
-                        ]
-                    ]
-                ]
-            ]
-        ];
     }
 
     protected function generateUserInfoPath()
@@ -160,54 +111,6 @@ class SwaggerController extends BaseController
                     "responses" => [
                         "200" => [
                             "description" => "Connected user data"
-                        ],
-
-                        "default" => [
-                            "description" => "Unexpected error"
-                        ]
-                    ]
-                ]
-            ]
-        ];
-    }
-
-    protected function generateRefreshPath()
-    {
-        return [
-            "/auth/refresh" => [
-                "get" => [
-                    "summary" => "Refresh token",
-                    "description" => "Refresh JWToken.",
-                    "tags" => [
-                        "Auth"
-                    ],
-                    "responses" => [
-                        "200" => [
-                            "description" => "Connected user data"
-                        ],
-
-                        "default" => [
-                            "description" => "Unexpected error"
-                        ]
-                    ]
-                ]
-            ]
-        ];
-    }
-
-    protected function generateLogoutPath()
-    {
-        return [
-            "/auth/logout" => [
-                "get" => [
-                    "summary" => "Logout",
-                    "description" => "Logout User",
-                    "tags" => [
-                        "Auth",
-                    ],
-                    "responses" => [
-                        "200" => [
-                            "description" => "User logged out"
                         ],
 
                         "default" => [
@@ -235,41 +138,41 @@ class SwaggerController extends BaseController
             // $describePath = method_exists($module, 'generateDescribePath') ? $module->generateDescribePath($this->domain, $module) : $this->generateDescribePath($module);
             // $countPath = method_exists($module, 'generateCountPath') ? $module->generateCountPath($this->domain, $module) : $this->generateCountPath($module);
 
-            if ($user->canRetrieveByApi($domain, $module)) {
+            if (config('l5-swagger.ignore_user_permissions') || $user->canRetrieveByApi($domain, $module)) {
                 $listPath = method_exists($module, 'generateListPath') ? $module->generateListPath($this->domain, $module) : $this->generateListPath($module);
                 $retrievePath = method_exists($module, 'generateRetrievePath') ? $module->generateRetrievePath($this->domain, $module) : $this->generateRetrievePath($module);
             }
 
-            if ($user->canCreateByApi($domain, $module)) {
+            if (config('l5-swagger.ignore_user_permissions') || $user->canCreateByApi($domain, $module)) {
                 $createPath = method_exists($module, 'generateCreatePath') ? $module->generateCreatePath($this->domain, $module) : $this->generateCreatePath($module);
             }
 
-            if ($user->canUpdateByApi($domain, $module)) {
+            if (config('l5-swagger.ignore_user_permissions') || $user->canUpdateByApi($domain, $module)) {
                 $updatePath = method_exists($module, 'generateUpdatePath') ? $module->generateUpdatePath($this->domain, $module) : $this->generateUpdatePath($module);
             }
 
-            if ($user->canDeleteByApi($domain, $module)) {
+            if (config('l5-swagger.ignore_user_permissions') || $user->canDeleteByApi($domain, $module)) {
                 $deletePath = method_exists($module, 'generateDeletePath') ? $module->generateDeletePath($this->domain, $module) : $this->generateDeletePath($module);
             }
 
             // List, Create
             $paths["/$domainSlug/$moduleName"] = array_merge(
-                $listPath,
-                $createPath
+                $listPath ?? [],
+                $createPath ?? []
             );
 
-            if(empty($paths["/$domainSlug/$moduleName"])){
+            if(empty($paths["/$domainSlug/$moduleName"])) {
                 unset($paths["/$domainSlug/$moduleName"]);
             }
 
             // Retrieve, Update
             $paths["/$domainSlug/$moduleName/{id}"] = array_merge(
-                $retrievePath,
-                $updatePath,
-                $deletePath
+                $retrievePath ?? [],
+                $updatePath ?? [],
+                $deletePath ?? []
             );
 
-            if(empty($paths["/$domainSlug/$moduleName/{id}"])){
+            if(empty($paths["/$domainSlug/$moduleName/{id}"])) {
                 unset($paths["/$domainSlug/$moduleName/{id}"]);
             }
         }
